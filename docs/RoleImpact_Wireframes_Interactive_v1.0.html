@@ -1,0 +1,1581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>RoleImpact Low-Fidelity Wireframes</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="RoleImpact Low-Fidelity Wireframes" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;RoleImpact Low-Fidelity Wireframes&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed=&quot;true&quot;],
+    [aria-selected=&quot;true&quot;],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: 16px !important;
+  height: 16px !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;roleimpact-wireframes-v1&quot; class=&quot;ri-root&quot;&gt;
+  &lt;style&gt;
+    #roleimpact-wireframes-v1 {
+      color-scheme: light dark;
+      --ri-page: light-dark(#eef1f4, #15191d);
+      --ri-surface: light-dark(#ffffff, #1d2329);
+      --ri-surface-soft: light-dark(#f5f6f8, #252c33);
+      --ri-line: light-dark(#aeb7c2, #66717c);
+      --ri-line-soft: light-dark(#d7dde3, #39434c);
+      --ri-ink: light-dark(#20262d, #edf1f4);
+      --ri-muted: light-dark(#68727d, #aeb8c2);
+      --ri-accent: light-dark(#315f82, #8ab4d4);
+      --ri-danger: light-dark(#8a3e45, #e49ca3);
+      --ri-warn: light-dark(#806225, #e1c171);
+      --ri-safe: light-dark(#3f6d57, #8ec2a5);
+      --ri-shadow: light-dark(0 16px 44px rgba(37, 45, 55, .12), 0 16px 44px rgba(0, 0, 0, .28));
+      display: block;
+      min-height: 100%;
+      padding: 18px;
+      background: var(--ri-page);
+      color: var(--ri-ink);
+      font-family: Inter, &quot;Segoe UI&quot;, Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    #roleimpact-wireframes-v1 * { box-sizing: border-box; }
+    #roleimpact-wireframes-v1 button,
+    #roleimpact-wireframes-v1 input,
+    #roleimpact-wireframes-v1 select { font: inherit; }
+    #roleimpact-wireframes-v1 button:focus-visible,
+    #roleimpact-wireframes-v1 input:focus-visible,
+    #roleimpact-wireframes-v1 select:focus-visible { outline: 3px solid color-mix(in srgb, var(--ri-accent) 55%, transparent); outline-offset: 2px; }
+    #roleimpact-wireframes-v1 .ri-viewer { max-width: 1380px; margin: 0 auto; }
+    #roleimpact-wireframes-v1 .ri-viewer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+    #roleimpact-wireframes-v1 .ri-kicker { margin: 0 0 4px; color: var(--ri-muted); font: 700 11px/1.2 &quot;Segoe UI&quot;, Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    #roleimpact-wireframes-v1 .ri-viewer-title { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: -.02em; }
+    #roleimpact-wireframes-v1 .ri-screen-picker { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    #roleimpact-wireframes-v1 .ri-screen-picker button { border: 1px solid var(--ri-line); background: var(--ri-surface); color: var(--ri-ink); border-radius: 7px; padding: 7px 10px; cursor: pointer; font-size: 12px; }
+    #roleimpact-wireframes-v1 .ri-screen-picker button[aria-pressed=&quot;true&quot;] { color: var(--ri-surface); background: var(--ri-accent); border-color: var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-product { min-height: 780px; display: grid; grid-template-columns: 210px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--ri-line); border-radius: 12px; background: var(--ri-surface); box-shadow: var(--ri-shadow); }
+    #roleimpact-wireframes-v1 .ri-sidebar { padding: 18px 14px; background: var(--ri-surface-soft); border-right: 1px solid var(--ri-line-soft); display: flex; flex-direction: column; }
+    #roleimpact-wireframes-v1 .ri-brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 17px; margin-bottom: 24px; }
+    #roleimpact-wireframes-v1 .ri-brand-mark { width: 27px; height: 27px; border: 2px solid var(--ri-ink); border-radius: 7px; display: grid; place-items: center; font-size: 12px; }
+    #roleimpact-wireframes-v1 .ri-nav { display: grid; gap: 6px; }
+    #roleimpact-wireframes-v1 .ri-nav-item { padding: 10px 11px; border-radius: 7px; color: var(--ri-muted); font-size: 13px; font-weight: 650; }
+    #roleimpact-wireframes-v1 .ri-nav-item.ri-active { color: var(--ri-ink); background: var(--ri-surface); border: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-sidebar-note { margin-top: auto; padding: 10px; border: 1px dashed var(--ri-line); border-radius: 7px; color: var(--ri-muted); font-size: 11px; line-height: 1.4; }
+    #roleimpact-wireframes-v1 .ri-main { min-width: 0; }
+    #roleimpact-wireframes-v1 .ri-topbar { min-height: 62px; border-bottom: 1px solid var(--ri-line-soft); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px; }
+    #roleimpact-wireframes-v1 .ri-org { font-size: 12px; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-demo-user { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--ri-line); display: grid; place-items: center; font-weight: 750; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-page { padding: 22px; }
+    #roleimpact-wireframes-v1 .ri-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+    #roleimpact-wireframes-v1 .ri-page-head h2 { margin: 0 0 5px; font-size: 22px; letter-spacing: -.02em; }
+    #roleimpact-wireframes-v1 .ri-page-head p { margin: 0; max-width: 720px; color: var(--ri-muted); font-size: 12px; line-height: 1.5; }
+    #roleimpact-wireframes-v1 .ri-primary,
+    #roleimpact-wireframes-v1 .ri-secondary,
+    #roleimpact-wireframes-v1 .ri-ghost { border-radius: 7px; padding: 9px 13px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    #roleimpact-wireframes-v1 .ri-primary { border: 1px solid var(--ri-accent); background: var(--ri-accent); color: var(--ri-surface); }
+    #roleimpact-wireframes-v1 .ri-secondary { border: 1px solid var(--ri-line); background: var(--ri-surface); color: var(--ri-ink); }
+    #roleimpact-wireframes-v1 .ri-ghost { border: 1px dashed var(--ri-line); background: transparent; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-card { border: 1px solid var(--ri-line-soft); background: var(--ri-surface); border-radius: 9px; padding: 14px; min-width: 0; }
+    #roleimpact-wireframes-v1 .ri-card h3 { margin: 0 0 10px; font-size: 13px; }
+    #roleimpact-wireframes-v1 .ri-card p { margin: 0; color: var(--ri-muted); font-size: 12px; line-height: 1.45; }
+    #roleimpact-wireframes-v1 .ri-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    #roleimpact-wireframes-v1 .ri-kpi { min-height: 90px; }
+    #roleimpact-wireframes-v1 .ri-kpi-label { color: var(--ri-muted); font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-kpi-value { margin: 8px 0 3px; font: 800 27px/1 &quot;Segoe UI&quot;, Arial, sans-serif; }
+    #roleimpact-wireframes-v1 .ri-kpi-sub { font-size: 11px; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-dashboard-grid { display: grid; grid-template-columns: 1.35fr .9fr; gap: 14px; }
+    #roleimpact-wireframes-v1 .ri-span-two { grid-column: 1 / -1; }
+    #roleimpact-wireframes-v1 .ri-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-table th { color: var(--ri-muted); text-transform: uppercase; letter-spacing: .06em; font-size: 9px; text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-table td { padding: 9px 6px; border-bottom: 1px solid var(--ri-line-soft); vertical-align: middle; }
+    #roleimpact-wireframes-v1 .ri-table tr:last-child td { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 999px; border: 1px solid currentColor; font-weight: 700; font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-pill::before { content: &quot;&quot;; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    #roleimpact-wireframes-v1 .ri-safe { color: var(--ri-safe); }
+    #roleimpact-wireframes-v1 .ri-warn { color: var(--ri-warn); }
+    #roleimpact-wireframes-v1 .ri-danger { color: var(--ri-danger); }
+    #roleimpact-wireframes-v1 .ri-dependency { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-dependency:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-dependency strong { display: block; font-size: 11px; margin-bottom: 3px; }
+    #roleimpact-wireframes-v1 .ri-dependency span { color: var(--ri-muted); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-explorer { display: grid; grid-template-columns: 250px minmax(360px, 1fr) 270px; gap: 12px; min-height: 610px; }
+    #roleimpact-wireframes-v1 .ri-search { width: 100%; border: 1px solid var(--ri-line); border-radius: 7px; padding: 9px 10px; background: var(--ri-surface); color: var(--ri-ink); }
+    #roleimpact-wireframes-v1 .ri-filter-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0; }
+    #roleimpact-wireframes-v1 .ri-filter-chip { border: 1px solid var(--ri-line); border-radius: 999px; padding: 4px 7px; font-size: 9px; background: var(--ri-surface); color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-filter-chip.ri-selected { background: var(--ri-surface-soft); color: var(--ri-ink); font-weight: 700; }
+    #roleimpact-wireframes-v1 .ri-entity-list { display: grid; gap: 6px; margin-top: 10px; }
+    #roleimpact-wireframes-v1 .ri-entity-row { padding: 9px; border: 1px solid var(--ri-line-soft); border-radius: 7px; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-entity-row.ri-selected { border-color: var(--ri-accent); box-shadow: inset 3px 0 var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-entity-row span { display: block; color: var(--ri-muted); font-size: 9px; margin-top: 2px; }
+    #roleimpact-wireframes-v1 .ri-graph { position: relative; overflow: hidden; background: var(--ri-surface-soft); border: 1px solid var(--ri-line-soft); border-radius: 9px; min-height: 610px; }
+    #roleimpact-wireframes-v1 .ri-graph-toolbar { position: absolute; inset: 10px 10px auto; display: flex; justify-content: space-between; z-index: 3; }
+    #roleimpact-wireframes-v1 .ri-graph-toolbar span { background: var(--ri-surface); border: 1px solid var(--ri-line); border-radius: 6px; padding: 6px 8px; font-size: 9px; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-graph svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #roleimpact-wireframes-v1 .ri-graph line,
+    #roleimpact-wireframes-v1 .ri-graph path { stroke: var(--ri-line); stroke-width: 1.5; fill: none; }
+    #roleimpact-wireframes-v1 .ri-graph .ri-removed-line { stroke: var(--ri-danger); stroke-dasharray: 7 5; stroke-width: 2; }
+    #roleimpact-wireframes-v1 .ri-node { position: absolute; transform: translate(-50%, -50%); width: 120px; padding: 9px; border: 1px solid var(--ri-line); border-radius: 8px; background: var(--ri-surface); text-align: center; font-size: 10px; font-weight: 700; z-index: 2; }
+    #roleimpact-wireframes-v1 .ri-node small { display: block; margin-top: 3px; color: var(--ri-muted); font-size: 8px; font-weight: 500; }
+    #roleimpact-wireframes-v1 .ri-node.ri-focus { border: 2px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-node.ri-removed { border: 2px dashed var(--ri-danger); color: var(--ri-danger); }
+    #roleimpact-wireframes-v1 .ri-detail-pair { display: grid; gap: 3px; margin-bottom: 11px; }
+    #roleimpact-wireframes-v1 .ri-detail-pair span { color: var(--ri-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+    #roleimpact-wireframes-v1 .ri-detail-pair strong { font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-detail-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(270px, .75fr); gap: 14px; }
+    #roleimpact-wireframes-v1 .ri-profile { display: flex; gap: 14px; align-items: center; }
+    #roleimpact-wireframes-v1 .ri-avatar { width: 54px; height: 54px; border-radius: 50%; background: var(--ri-surface-soft); border: 1px solid var(--ri-line); display: grid; place-items: center; font-weight: 800; }
+    #roleimpact-wireframes-v1 .ri-profile h3 { margin: 0 0 4px; font-size: 17px; }
+    #roleimpact-wireframes-v1 .ri-profile p { margin: 0; color: var(--ri-muted); font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-tabs { display: flex; gap: 15px; margin: 15px 0 10px; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-tab { padding: 8px 0; color: var(--ri-muted); font-size: 10px; font-weight: 700; }
+    #roleimpact-wireframes-v1 .ri-tab.ri-active { color: var(--ri-ink); border-bottom: 2px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    #roleimpact-wireframes-v1 .ri-access-item { padding: 10px; border: 1px solid var(--ri-line-soft); border-radius: 7px; }
+    #roleimpact-wireframes-v1 .ri-access-item strong { display: block; font-size: 11px; margin-bottom: 3px; }
+    #roleimpact-wireframes-v1 .ri-access-item span { color: var(--ri-muted); font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-workflow-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-workflow-card:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-workflow-card strong { display: block; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-workflow-card span { color: var(--ri-muted); font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-stepper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 4px 0 18px; }
+    #roleimpact-wireframes-v1 .ri-step { position: relative; display: flex; align-items: center; gap: 8px; color: var(--ri-muted); font-size: 10px; font-weight: 700; }
+    #roleimpact-wireframes-v1 .ri-step::after { content: &quot;&quot;; height: 1px; background: var(--ri-line); flex: 1; }
+    #roleimpact-wireframes-v1 .ri-step:last-child::after { display: none; }
+    #roleimpact-wireframes-v1 .ri-step-num { width: 25px; height: 25px; border-radius: 50%; border: 1px solid var(--ri-line); display: grid; place-items: center; background: var(--ri-surface); }
+    #roleimpact-wireframes-v1 .ri-step.ri-current { color: var(--ri-ink); }
+    #roleimpact-wireframes-v1 .ri-step.ri-current .ri-step-num { background: var(--ri-accent); color: var(--ri-surface); border-color: var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-sim-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 14px; }
+    #roleimpact-wireframes-v1 .ri-choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    #roleimpact-wireframes-v1 .ri-choice { border: 1px solid var(--ri-line); border-radius: 8px; padding: 11px; min-height: 92px; }
+    #roleimpact-wireframes-v1 .ri-choice.ri-selected { border: 2px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-choice strong { display: block; font-size: 11px; margin-bottom: 6px; }
+    #roleimpact-wireframes-v1 .ri-choice span { color: var(--ri-muted); font-size: 9px; line-height: 1.4; }
+    #roleimpact-wireframes-v1 .ri-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 13px; }
+    #roleimpact-wireframes-v1 label { display: grid; gap: 5px; color: var(--ri-muted); font-size: 10px; font-weight: 700; }
+    #roleimpact-wireframes-v1 select { width: 100%; border: 1px solid var(--ri-line); border-radius: 7px; background: var(--ri-surface); color: var(--ri-ink); padding: 9px; }
+    #roleimpact-wireframes-v1 .ri-review-list { margin: 0; padding: 0; list-style: none; }
+    #roleimpact-wireframes-v1 .ri-review-list li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--ri-line-soft); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-review-list li:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-review-list span { color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-safe-note { margin-top: 12px; border: 1px dashed var(--ri-line); padding: 9px; border-radius: 7px; color: var(--ri-muted); font-size: 9px; line-height: 1.45; }
+    #roleimpact-wireframes-v1 .ri-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    #roleimpact-wireframes-v1 .ri-verdict { border: 2px solid var(--ri-danger); border-radius: 9px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
+    #roleimpact-wireframes-v1 .ri-verdict h3 { margin: 0 0 4px; font-size: 16px; }
+    #roleimpact-wireframes-v1 .ri-verdict p { margin: 0; color: var(--ri-muted); font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-severity { font-weight: 850; font-size: 12px; color: var(--ri-danger); white-space: nowrap; }
+    #roleimpact-wireframes-v1 .ri-results-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(290px, .8fr); gap: 13px; }
+    #roleimpact-wireframes-v1 .ri-impact-row { display: grid; grid-template-columns: 95px 1fr 90px; gap: 9px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ri-line-soft); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-impact-row:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-path { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+    #roleimpact-wireframes-v1 .ri-path span { border: 1px solid var(--ri-line); border-radius: 5px; padding: 5px 7px; font-size: 9px; background: var(--ri-surface-soft); }
+    #roleimpact-wireframes-v1 .ri-path b { color: var(--ri-muted); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-mini-graph { position: relative; min-height: 270px; margin-top: 8px; }
+    #roleimpact-wireframes-v1 .ri-mini-graph .ri-node { width: 105px; }
+    #roleimpact-wireframes-v1 .ri-recommendation { border-left: 4px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-recommendation ul { padding-left: 17px; color: var(--ri-muted); font-size: 10px; line-height: 1.5; }
+    #roleimpact-wireframes-v1 .ri-compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: stretch; margin-top: 10px; }
+    #roleimpact-wireframes-v1 .ri-compare-box { padding: 9px; border: 1px solid var(--ri-line-soft); border-radius: 7px; font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-arrow { display: grid; place-items: center; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-history-tools { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    #roleimpact-wireframes-v1 .ri-history-tools .ri-search { max-width: 360px; }
+    #roleimpact-wireframes-v1 .ri-history-table th,
+    #roleimpact-wireframes-v1 .ri-history-table td { padding: 11px 8px; }
+    #roleimpact-wireframes-v1 .ri-row-actions { color: var(--ri-accent); font-weight: 700; white-space: nowrap; }
+    #roleimpact-wireframes-v1 [data-view] { display: none; }
+    #roleimpact-wireframes-v1 [data-view].ri-visible { display: block; }
+    @media (max-width: 980px) {
+      #roleimpact-wireframes-v1 .ri-product { grid-template-columns: 165px minmax(0, 1fr); }
+      #roleimpact-wireframes-v1 .ri-explorer { grid-template-columns: 210px 1fr; }
+      #roleimpact-wireframes-v1 .ri-explorer &gt; aside:last-child { grid-column: 1 / -1; }
+      #roleimpact-wireframes-v1 .ri-kpis { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 800px) {
+      #roleimpact-wireframes-v1 { padding: 10px; width: 100%; max-width: 100%; overflow-x: hidden; }
+      #roleimpact-wireframes-v1 .ri-viewer,
+      #roleimpact-wireframes-v1 .ri-product,
+      #roleimpact-wireframes-v1 .ri-main,
+      #roleimpact-wireframes-v1 .ri-page,
+      #roleimpact-wireframes-v1 .ri-sidebar { width: 100%; max-width: 100%; min-width: 0; }
+      #roleimpact-wireframes-v1 .ri-viewer-head { align-items: flex-start; flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-screen-picker { justify-content: flex-start; width: calc(100vw - 36px); max-width: 100%; }
+      #roleimpact-wireframes-v1 .ri-screen-picker button { white-space: normal; }
+      #roleimpact-wireframes-v1 .ri-product { display: block; min-height: 0; }
+      #roleimpact-wireframes-v1 .ri-sidebar { border-right: 0; border-bottom: 1px solid var(--ri-line-soft); padding: 11px; }
+      #roleimpact-wireframes-v1 .ri-brand { margin-bottom: 10px; }
+      #roleimpact-wireframes-v1 .ri-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      #roleimpact-wireframes-v1 .ri-nav-item { min-width: 0; padding: 8px 3px; text-align: center; font-size: 9px; overflow: hidden; }
+      #roleimpact-wireframes-v1 .ri-sidebar-note { display: none; }
+      #roleimpact-wireframes-v1 .ri-topbar { padding: 10px 12px; flex-wrap: wrap; }
+      #roleimpact-wireframes-v1 .ri-org { min-width: 0; overflow-wrap: anywhere; }
+      #roleimpact-wireframes-v1 .ri-page { padding: 13px; }
+      #roleimpact-wireframes-v1 .ri-page-head { flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-kpis,
+      #roleimpact-wireframes-v1 .ri-dashboard-grid,
+      #roleimpact-wireframes-v1 .ri-detail-layout,
+      #roleimpact-wireframes-v1 .ri-sim-grid,
+      #roleimpact-wireframes-v1 .ri-results-grid,
+      #roleimpact-wireframes-v1 .ri-explorer,
+      #roleimpact-wireframes-v1 .ri-access-grid { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-choice-grid { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-form-row { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-explorer &gt; aside:last-child { grid-column: auto; }
+      #roleimpact-wireframes-v1 .ri-graph { min-height: 480px; }
+      #roleimpact-wireframes-v1 .ri-verdict { align-items: flex-start; flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-verdict h3,
+      #roleimpact-wireframes-v1 .ri-verdict p { overflow-wrap: anywhere; }
+      #roleimpact-wireframes-v1 .ri-path { overflow-x: auto; }
+      #roleimpact-wireframes-v1 .ri-mini-graph .ri-node { width: 88px; overflow-wrap: anywhere; }
+      #roleimpact-wireframes-v1 .ri-impact-row { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-history-tools { flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-history-table { min-width: 680px; }
+      #roleimpact-wireframes-v1 .ri-table-scroll { overflow-x: auto; }
+    }
+  &lt;/style&gt;
+
+  &lt;div class=&quot;ri-viewer&quot;&gt;
+    &lt;header class=&quot;ri-viewer-head&quot;&gt;
+      &lt;div&gt;
+        &lt;p class=&quot;ri-kicker&quot;&gt;Low-fidelity interaction model&lt;/p&gt;
+        &lt;h1 class=&quot;ri-viewer-title&quot;&gt;RoleImpact wireframes&lt;/h1&gt;
+      &lt;/div&gt;
+      &lt;nav class=&quot;ri-screen-picker&quot; aria-label=&quot;Wireframe screens&quot;&gt;
+        &lt;button type=&quot;button&quot; data-screen=&quot;dashboard&quot; aria-pressed=&quot;true&quot;&gt;1 Dashboard&lt;/button&gt;
+        &lt;button type=&quot;button&quot; data-screen=&quot;explorer&quot; aria-pressed=&quot;false&quot;&gt;2 Explorer&lt;/button&gt;
+        &lt;button type=&quot;button&quot; data-screen=&quot;entity&quot; aria-pressed=&quot;false&quot;&gt;3 Entity&lt;/button&gt;
+        &lt;button type=&quot;button&quot; data-screen=&quot;simulation&quot; aria-pressed=&quot;false&quot;&gt;4 New simulation&lt;/button&gt;
+        &lt;button type=&quot;button&quot; data-screen=&quot;results&quot; aria-pressed=&quot;false&quot;&gt;5 Results&lt;/button&gt;
+        &lt;button type=&quot;button&quot; data-screen=&quot;history&quot; aria-pressed=&quot;false&quot;&gt;6 History&lt;/button&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+
+    &lt;section class=&quot;ri-product&quot; aria-label=&quot;RoleImpact product wireframe&quot;&gt;
+      &lt;aside class=&quot;ri-sidebar&quot;&gt;
+        &lt;div class=&quot;ri-brand&quot;&gt;&lt;span class=&quot;ri-brand-mark&quot;&gt;RI&lt;/span&gt;&lt;span&gt;RoleImpact&lt;/span&gt;&lt;/div&gt;
+        &lt;nav class=&quot;ri-nav&quot; aria-label=&quot;Primary navigation&quot;&gt;
+          &lt;div class=&quot;ri-nav-item ri-active&quot; data-nav=&quot;dashboard&quot;&gt;Dashboard&lt;/div&gt;
+          &lt;div class=&quot;ri-nav-item&quot; data-nav=&quot;explorer&quot;&gt;Explorer&lt;/div&gt;
+          &lt;div class=&quot;ri-nav-item&quot; data-nav=&quot;history&quot;&gt;Simulations&lt;/div&gt;
+        &lt;/nav&gt;
+        &lt;div class=&quot;ri-sidebar-note&quot;&gt;Read-only demo&lt;br&gt;Harborline Commerce&lt;br&gt;Baseline v1&lt;/div&gt;
+      &lt;/aside&gt;
+      &lt;main class=&quot;ri-main&quot;&gt;
+        &lt;header class=&quot;ri-topbar&quot;&gt;
+          &lt;div class=&quot;ri-org&quot;&gt;Harborline Commerce &amp;nbsp;/&amp;nbsp; Access continuity workspace&lt;/div&gt;
+          &lt;div class=&quot;ri-demo-user&quot; aria-label=&quot;Demo reviewer&quot;&gt;DR&lt;/div&gt;
+        &lt;/header&gt;
+
+        &lt;section class=&quot;ri-page ri-visible&quot; data-view=&quot;dashboard&quot;&gt;
+          &lt;div class=&quot;ri-page-head&quot;&gt;
+            &lt;div&gt;&lt;h2&gt;Access health overview&lt;/h2&gt;&lt;p&gt;See fragile workflow coverage before starting a what-if scenario.&lt;/p&gt;&lt;/div&gt;
+            &lt;button class=&quot;ri-primary&quot; type=&quot;button&quot; data-jump=&quot;simulation&quot;&gt;+ New Simulation&lt;/button&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ri-kpis&quot;&gt;
+            &lt;article class=&quot;ri-card ri-kpi&quot;&gt;&lt;div class=&quot;ri-kpi-label&quot;&gt;Employees&lt;/div&gt;&lt;div class=&quot;ri-kpi-value&quot;&gt;25&lt;/div&gt;&lt;div class=&quot;ri-kpi-sub&quot;&gt;5 teams / 3 regions&lt;/div&gt;&lt;/article&gt;
+            &lt;article class=&quot;ri-card ri-kpi&quot;&gt;&lt;div class=&quot;ri-kpi-label&quot;&gt;Roles&lt;/div&gt;&lt;div class=&quot;ri-kpi-value&quot;&gt;8&lt;/div&gt;&lt;div class=&quot;ri-kpi-sub&quot;&gt;4 sensitive roles&lt;/div&gt;&lt;/article&gt;
+            &lt;article class=&quot;ri-card ri-kpi&quot;&gt;&lt;div class=&quot;ri-kpi-label&quot;&gt;Applications&lt;/div&gt;&lt;div class=&quot;ri-kpi-value&quot;&gt;6&lt;/div&gt;&lt;div class=&quot;ri-kpi-sub&quot;&gt;22 permissions&lt;/div&gt;&lt;/article&gt;
+            &lt;article class=&quot;ri-card ri-kpi&quot;&gt;&lt;div class=&quot;ri-kpi-label&quot;&gt;Workflow health&lt;/div&gt;&lt;div class=&quot;ri-kpi-value&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;ri-kpi-sub&quot;&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;2 operational&lt;/span&gt; &amp;nbsp;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;1 degraded&lt;/span&gt;&lt;/div&gt;&lt;/article&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ri-dashboard-grid&quot;&gt;
+            &lt;article class=&quot;ri-card&quot;&gt;
+              &lt;h3&gt;Workflow coverage&lt;/h3&gt;
+              &lt;table class=&quot;ri-table&quot;&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Workflow&lt;/th&gt;&lt;th&gt;Criticality&lt;/th&gt;&lt;th&gt;Coverage&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+                &lt;tr&gt;&lt;td&gt;Vendor Payment&lt;/td&gt;&lt;td&gt;Critical&lt;/td&gt;&lt;td&gt;3 of 4 steps resilient&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;Degraded&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+                &lt;tr&gt;&lt;td&gt;Customer Refund&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;4 of 4 steps resilient&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;Operational&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+                &lt;tr&gt;&lt;td&gt;Production Deployment&lt;/td&gt;&lt;td&gt;Critical&lt;/td&gt;&lt;td&gt;3 of 3 steps resilient&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;Operational&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+              &lt;/tbody&gt;&lt;/table&gt;
+            &lt;/article&gt;
+            &lt;article class=&quot;ri-card&quot;&gt;
+              &lt;h3&gt;Single-person dependencies&lt;/h3&gt;
+              &lt;div class=&quot;ri-dependency&quot;&gt;&lt;div&gt;&lt;strong&gt;Evening payment approval&lt;/strong&gt;&lt;span&gt;Vendor Payment / Priya Sharma only&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;1 actor&lt;/span&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-dependency&quot;&gt;&lt;div&gt;&lt;strong&gt;Month-end close approval&lt;/strong&gt;&lt;span&gt;Finance Operations / Ana Ruiz only&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;1 actor&lt;/span&gt;&lt;/div&gt;
+              &lt;button class=&quot;ri-secondary&quot; type=&quot;button&quot; data-jump=&quot;explorer&quot; style=&quot;margin-top:12px&quot;&gt;Explore relationships&lt;/button&gt;
+            &lt;/article&gt;
+            &lt;article class=&quot;ri-card ri-span-two&quot;&gt;
+              &lt;h3&gt;Recent simulations&lt;/h3&gt;
+              &lt;table class=&quot;ri-table&quot;&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Scenario&lt;/th&gt;&lt;th&gt;Change&lt;/th&gt;&lt;th&gt;Target&lt;/th&gt;&lt;th&gt;Verdict&lt;/th&gt;&lt;th&gt;Run&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+                &lt;tr&gt;&lt;td&gt;Evening approver review&lt;/td&gt;&lt;td&gt;Revoke role&lt;/td&gt;&lt;td&gt;Priya Sharma&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-danger&quot;&gt;Critical&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Today, 10:42&lt;/td&gt;&lt;/tr&gt;
+                &lt;tr&gt;&lt;td&gt;Viewer cleanup&lt;/td&gt;&lt;td&gt;Revoke role&lt;/td&gt;&lt;td&gt;Luis Kim&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;Low&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Yesterday&lt;/td&gt;&lt;/tr&gt;
+              &lt;/tbody&gt;&lt;/table&gt;
+            &lt;/article&gt;
+          &lt;/div&gt;
+        &lt;/section&gt;
+
+        &lt;section class=&quot;ri-page&quot; data-view=&quot;explorer&quot;&gt;
+          &lt;div class=&quot;ri-page-head&quot;&gt;
+            &lt;div&gt;&lt;h2&gt;Organization Explorer&lt;/h2&gt;&lt;p&gt;Find an entity, inspect its relationships, then begin a contextual simulation.&lt;/p&gt;&lt;/div&gt;
+            &lt;button class=&quot;ri-primary&quot; type=&quot;button&quot; data-jump=&quot;simulation&quot;&gt;Simulate a change&lt;/button&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ri-explorer&quot;&gt;
+            &lt;aside class=&quot;ri-card&quot;&gt;
+              &lt;input class=&quot;ri-search&quot; aria-label=&quot;Search entities&quot; value=&quot;Priya&quot; /&gt;
+              &lt;div class=&quot;ri-filter-row&quot;&gt;&lt;span class=&quot;ri-filter-chip ri-selected&quot;&gt;Employees&lt;/span&gt;&lt;span class=&quot;ri-filter-chip&quot;&gt;Roles&lt;/span&gt;&lt;span class=&quot;ri-filter-chip&quot;&gt;Apps&lt;/span&gt;&lt;span class=&quot;ri-filter-chip&quot;&gt;Workflows&lt;/span&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-entity-list&quot;&gt;
+                &lt;div class=&quot;ri-entity-row ri-selected&quot;&gt;Priya Sharma&lt;span&gt;Finance Operations / Evening&lt;/span&gt;&lt;/div&gt;
+                &lt;div class=&quot;ri-entity-row&quot;&gt;Priya Nair&lt;span&gt;Customer Support / Day&lt;/span&gt;&lt;/div&gt;
+              &lt;/div&gt;
+            &lt;/aside&gt;
+            &lt;div class=&quot;ri-graph&quot; aria-label=&quot;Relationship graph&quot;&gt;
+              &lt;div class=&quot;ri-graph-toolbar&quot;&gt;&lt;span&gt;Affected paths only&lt;/span&gt;&lt;span&gt;− &amp;nbsp; 100% &amp;nbsp; +&lt;/span&gt;&lt;/div&gt;
+              &lt;svg viewBox=&quot;0 0 620 600&quot; preserveAspectRatio=&quot;none&quot; aria-hidden=&quot;true&quot;&gt;&lt;line x1=&quot;125&quot; y1=&quot;300&quot; x2=&quot;270&quot; y2=&quot;180&quot;/&gt;&lt;line x1=&quot;125&quot; y1=&quot;300&quot; x2=&quot;270&quot; y2=&quot;410&quot;/&gt;&lt;line x1=&quot;270&quot; y1=&quot;180&quot; x2=&quot;430&quot; y2=&quot;235&quot;/&gt;&lt;line x1=&quot;270&quot; y1=&quot;410&quot; x2=&quot;430&quot; y2=&quot;365&quot;/&gt;&lt;line x1=&quot;430&quot; y1=&quot;235&quot; x2=&quot;530&quot; y2=&quot;300&quot;/&gt;&lt;line x1=&quot;430&quot; y1=&quot;365&quot; x2=&quot;530&quot; y2=&quot;300&quot;/&gt;&lt;/svg&gt;
+              &lt;div class=&quot;ri-node ri-focus&quot; style=&quot;left:20%;top:50%&quot;&gt;Priya Sharma&lt;small&gt;Employee&lt;/small&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-node&quot; style=&quot;left:44%;top:30%&quot;&gt;Finance Approver&lt;small&gt;Role&lt;/small&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-node&quot; style=&quot;left:44%;top:68%&quot;&gt;Finance Analyst&lt;small&gt;Role&lt;/small&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-node&quot; style=&quot;left:70%;top:39%&quot;&gt;payment.approve&lt;small&gt;Permission&lt;/small&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-node&quot; style=&quot;left:70%;top:61%&quot;&gt;payment.create&lt;small&gt;Permission&lt;/small&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-node&quot; style=&quot;left:86%;top:50%&quot;&gt;Vendor Payment&lt;small&gt;Workflow&lt;/small&gt;&lt;/div&gt;
+            &lt;/div&gt;
+            &lt;aside class=&quot;ri-card&quot;&gt;
+              &lt;h3&gt;Selected entity&lt;/h3&gt;
+              &lt;div class=&quot;ri-detail-pair&quot;&gt;&lt;span&gt;Employee&lt;/span&gt;&lt;strong&gt;Priya Sharma&lt;/strong&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-detail-pair&quot;&gt;&lt;span&gt;Team&lt;/span&gt;&lt;strong&gt;Finance Operations&lt;/strong&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-detail-pair&quot;&gt;&lt;span&gt;Region / Shift&lt;/span&gt;&lt;strong&gt;Canada East / Evening&lt;/strong&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-detail-pair&quot;&gt;&lt;span&gt;Effective access&lt;/span&gt;&lt;strong&gt;2 roles / 6 permissions&lt;/strong&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-detail-pair&quot;&gt;&lt;span&gt;Workflow coverage&lt;/span&gt;&lt;strong&gt;2 steps / 1 sole dependency&lt;/strong&gt;&lt;/div&gt;
+              &lt;button class=&quot;ri-secondary&quot; type=&quot;button&quot; data-jump=&quot;entity&quot; style=&quot;width:100%&quot;&gt;Open full details&lt;/button&gt;
+            &lt;/aside&gt;
+          &lt;/div&gt;
+        &lt;/section&gt;
+
+        &lt;section class=&quot;ri-page&quot; data-view=&quot;entity&quot;&gt;
+          &lt;div class=&quot;ri-page-head&quot;&gt;
+            &lt;div&gt;&lt;p style=&quot;margin-bottom:4px&quot;&gt;Explorer / Employees&lt;/p&gt;&lt;h2&gt;Employee details&lt;/h2&gt;&lt;/div&gt;
+            &lt;button class=&quot;ri-primary&quot; type=&quot;button&quot; data-jump=&quot;simulation&quot;&gt;Simulate a change&lt;/button&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;ri-detail-layout&quot;&gt;
+            &lt;div&gt;
+              &lt;article class=&quot;ri-card&quot;&gt;
+                &lt;div class=&quot;ri-profile&quot;&gt;&lt;div class=&quot;ri-avatar&quot;&gt;PS&lt;/div&gt;&lt;div&gt;&lt;h3&gt;Priya Sharma&lt;/h3&gt;&lt;p&gt;Finance Operations · Canada East · Evening shift&lt;/p&gt;&lt;div style=&quot;margin-top:7px&quot;&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;Active&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;
+                &lt;div class=&quot;ri-tabs&quot;&gt;&lt;span class=&quot;ri-tab ri-active&quot;&gt;Effective access&lt;/span&gt;&lt;span class=&quot;ri-tab&quot;&gt;Roles&lt;/span&gt;&lt;span class=&quot;ri-tab&quot;&gt;Applications&lt;/span&gt;&lt;span class=&quot;ri-tab&quot;&gt;Workflow steps&lt;/span&gt;&lt;/div&gt;
+                &lt;div class=&quot;ri-access-grid&quot;&gt;
+                  &lt;div class=&quot;ri-access-item&quot;&gt;&lt;strong&gt;Finance Approver&lt;/strong&gt;&lt;span&gt;Direct role · High sensitivity · 3 permissions&lt;/span&gt;&lt;/div&gt;
+                  &lt;div class=&quot;ri-access-item&quot;&gt;&lt;strong&gt;Finance Analyst&lt;/strong&gt;&lt;span&gt;Direct role · Medium sensitivity · 3 permissions&lt;/span&gt;&lt;/div&gt;
+                  &lt;div class=&quot;ri-access-item&quot;&gt;&lt;strong&gt;payment.approve&lt;/strong&gt;&lt;span&gt;LedgerPro / High-value payments&lt;/span&gt;&lt;/div&gt;
+                  &lt;div class=&quot;ri-access-item&quot;&gt;&lt;strong&gt;payment.create&lt;/strong&gt;&lt;span&gt;LedgerPro / Vendor payments&lt;/span&gt;&lt;/div&gt;
+                  &lt;div class=&quot;ri-access-item&quot;&gt;&lt;strong&gt;vendor.read&lt;/strong&gt;&lt;span&gt;Vendor Portal / Supplier profile&lt;/span&gt;&lt;/div&gt;
+                  &lt;div class=&quot;ri-access-item&quot;&gt;&lt;strong&gt;ledger.read&lt;/strong&gt;&lt;span&gt;LedgerPro / General ledger&lt;/span&gt;&lt;/div&gt;
+                &lt;/div&gt;
+              &lt;/article&gt;
+            &lt;/div&gt;
+            &lt;aside class=&quot;ri-card&quot;&gt;
+              &lt;h3&gt;Business workflow coverage&lt;/h3&gt;
+              &lt;div class=&quot;ri-workflow-card&quot;&gt;&lt;div&gt;&lt;strong&gt;Vendor Payment&lt;/strong&gt;&lt;span&gt;High-value approval / sole evening actor&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;Fragile&lt;/span&gt;&lt;/div&gt;
+              &lt;div class=&quot;ri-workflow-card&quot;&gt;&lt;div&gt;&lt;strong&gt;Month-End Close&lt;/strong&gt;&lt;span&gt;Approval / backup actor&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;Covered&lt;/span&gt;&lt;/div&gt;
+              &lt;h3 style=&quot;margin-top:18px&quot;&gt;Access origin&lt;/h3&gt;
+              &lt;p&gt;Every effective permission links back to a current role assignment. No direct grants exist for this employee.&lt;/p&gt;
+              &lt;button class=&quot;ri-secondary&quot; type=&quot;button&quot; data-jump=&quot;explorer&quot; style=&quot;width:100%;margin-top:13px&quot;&gt;View relationship graph&lt;/button&gt;
+            &lt;/aside&gt;
+          &lt;/div&gt;
+        &lt;/section&gt;
+
+        &lt;section class=&quot;ri-page&quot; data-view=&quot;simulation&quot;&gt;
+          &lt;div class=&quot;ri-page-head&quot;&gt;&lt;div&gt;&lt;h2&gt;New simulation&lt;/h2&gt;&lt;p&gt;Define the access removal, review its current relationships, then analyze an isolated scenario.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;ri-stepper&quot;&gt;&lt;div class=&quot;ri-step ri-current&quot;&gt;&lt;span class=&quot;ri-step-num&quot;&gt;1&lt;/span&gt;Change and target&lt;/div&gt;&lt;div class=&quot;ri-step&quot;&gt;&lt;span class=&quot;ri-step-num&quot;&gt;2&lt;/span&gt;Review current access&lt;/div&gt;&lt;div class=&quot;ri-step&quot;&gt;&lt;span class=&quot;ri-step-num&quot;&gt;3&lt;/span&gt;Run analysis&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;ri-sim-grid&quot;&gt;
+            &lt;article class=&quot;ri-card&quot;&gt;
+              &lt;h3&gt;1. What should be simulated?&lt;/h3&gt;
+              &lt;div class=&quot;ri-choice-grid&quot;&gt;
+                &lt;div class=&quot;ri-choice&quot;&gt;&lt;strong&gt;Offboard employee&lt;/strong&gt;&lt;span&gt;Remove every active role assignment for one employee.&lt;/span&gt;&lt;/div&gt;
+                &lt;div class=&quot;ri-choice ri-selected&quot;&gt;&lt;strong&gt;Revoke role&lt;/strong&gt;&lt;span&gt;Remove one role from one employee and recalculate inherited access.&lt;/span&gt;&lt;/div&gt;
+                &lt;div class=&quot;ri-choice&quot;&gt;&lt;strong&gt;Remove permission&lt;/strong&gt;&lt;span&gt;Change a role definition and recalculate every role holder.&lt;/span&gt;&lt;/div&gt;
+              &lt;/div&gt;
+              &lt;div class=&quot;ri-form-row&quot;&gt;
+                &lt;label&gt;Employee&lt;select&gt;&lt;option&gt;Priya Sharma — Finance Operations&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;
+                &lt;label&gt;Role to revoke&lt;select&gt;&lt;option&gt;Finance Approver&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;
+              &lt;/div&gt;
+              &lt;div class=&quot;ri-safe-note&quot;&gt;&lt;strong&gt;Safe simulation.&lt;/strong&gt; No role or permission will be changed in the Harborline baseline. The analysis runs against baseline v1.&lt;/div&gt;
+            &lt;/article&gt;
+            &lt;aside class=&quot;ri-card&quot;&gt;
+              &lt;h3&gt;2. Review exact proposal&lt;/h3&gt;
+              &lt;ul class=&quot;ri-review-list&quot;&gt;
+                &lt;li&gt;&lt;span&gt;Employee&lt;/span&gt;&lt;strong&gt;Priya Sharma&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Role removed&lt;/span&gt;&lt;strong&gt;Finance Approver&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Direct permissions&lt;/span&gt;&lt;strong&gt;3 affected&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Applications&lt;/span&gt;&lt;strong&gt;LedgerPro&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Connected workflows&lt;/span&gt;&lt;strong&gt;2&lt;/strong&gt;&lt;/li&gt;
+              &lt;/ul&gt;
+              &lt;h3 style=&quot;margin-top:16px&quot;&gt;Current risk signal&lt;/h3&gt;
+              &lt;p&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;Sole evening approver&lt;/span&gt;&lt;/p&gt;
+              &lt;div class=&quot;ri-actions&quot;&gt;&lt;button class=&quot;ri-secondary&quot; type=&quot;button&quot;&gt;Cancel&lt;/button&gt;&lt;button class=&quot;ri-primary&quot; type=&quot;button&quot; data-jump=&quot;results&quot;&gt;Run Impact Analysis&lt;/button&gt;&lt;/div&gt;
+            &lt;/aside&gt;
+          &lt;/div&gt;
+        &lt;/section&gt;
+
+        &lt;section class=&quot;ri-page&quot; data-view=&quot;results&quot;&gt;
+          &lt;div class=&quot;ri-page-head&quot;&gt;&lt;div&gt;&lt;p style=&quot;margin-bottom:4px&quot;&gt;Simulation RI-1042 / Baseline v1&lt;/p&gt;&lt;h2&gt;Simulation results&lt;/h2&gt;&lt;/div&gt;&lt;div&gt;&lt;button class=&quot;ri-secondary&quot; type=&quot;button&quot;&gt;Save scenario&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;ri-verdict&quot;&gt;&lt;div&gt;&lt;h3&gt;Vendor Payment is blocked for evening high-value approvals&lt;/h3&gt;&lt;p&gt;Revoking Finance Approver from Priya removes the final eligible evening actor. One additional workflow becomes fragile.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;ri-severity&quot;&gt;CRITICAL IMPACT&lt;/div&gt;&lt;/div&gt;
+          &lt;div class=&quot;ri-results-grid&quot;&gt;
+            &lt;div&gt;
+              &lt;article class=&quot;ri-card&quot;&gt;
+                &lt;h3&gt;Business impact first&lt;/h3&gt;
+                &lt;div class=&quot;ri-impact-row&quot;&gt;&lt;strong&gt;Vendor Payment&lt;/strong&gt;&lt;span&gt;High-value approval has 0 eligible evening actors.&lt;/span&gt;&lt;span class=&quot;ri-pill ri-danger&quot;&gt;Blocked&lt;/span&gt;&lt;/div&gt;
+                &lt;div class=&quot;ri-impact-row&quot;&gt;&lt;strong&gt;Month-End Close&lt;/strong&gt;&lt;span&gt;Approval remains possible but has only 1 eligible actor.&lt;/span&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;Degraded&lt;/span&gt;&lt;/div&gt;
+              &lt;/article&gt;
+              &lt;article class=&quot;ri-card&quot; style=&quot;margin-top:12px&quot;&gt;
+                &lt;h3&gt;Why this happens&lt;/h3&gt;&lt;p&gt;The engine traces the removed assignment to the capability required by the workflow step.&lt;/p&gt;
+                &lt;div class=&quot;ri-path&quot;&gt;&lt;span&gt;Priya Sharma&lt;/span&gt;&lt;b&gt;›&lt;/b&gt;&lt;span&gt;Finance Approver&lt;/span&gt;&lt;b&gt;›&lt;/b&gt;&lt;span&gt;payment.approve&lt;/span&gt;&lt;b&gt;›&lt;/b&gt;&lt;span&gt;High-value approval&lt;/span&gt;&lt;b&gt;›&lt;/b&gt;&lt;span&gt;Vendor Payment&lt;/span&gt;&lt;/div&gt;
+              &lt;/article&gt;
+              &lt;article class=&quot;ri-card&quot; style=&quot;margin-top:12px&quot;&gt;
+                &lt;h3&gt;Focused before / after graph&lt;/h3&gt;
+                &lt;div class=&quot;ri-mini-graph ri-graph&quot;&gt;
+                  &lt;div class=&quot;ri-graph-toolbar&quot;&gt;&lt;span&gt;After&lt;/span&gt;&lt;span&gt;− &amp;nbsp; 100% &amp;nbsp; +&lt;/span&gt;&lt;/div&gt;
+                  &lt;svg viewBox=&quot;0 0 650 270&quot; preserveAspectRatio=&quot;none&quot; aria-hidden=&quot;true&quot;&gt;&lt;line class=&quot;ri-removed-line&quot; x1=&quot;105&quot; y1=&quot;150&quot; x2=&quot;250&quot; y2=&quot;90&quot;/&gt;&lt;line class=&quot;ri-removed-line&quot; x1=&quot;250&quot; y1=&quot;90&quot; x2=&quot;390&quot; y2=&quot;150&quot;/&gt;&lt;line class=&quot;ri-removed-line&quot; x1=&quot;390&quot; y1=&quot;150&quot; x2=&quot;545&quot; y2=&quot;150&quot;/&gt;&lt;/svg&gt;
+                  &lt;div class=&quot;ri-node&quot; style=&quot;left:16%;top:58%&quot;&gt;Priya Sharma&lt;small&gt;Employee&lt;/small&gt;&lt;/div&gt;&lt;div class=&quot;ri-node ri-removed&quot; style=&quot;left:39%;top:35%&quot;&gt;Finance Approver&lt;small&gt;Removed role&lt;/small&gt;&lt;/div&gt;&lt;div class=&quot;ri-node ri-removed&quot; style=&quot;left:61%;top:58%&quot;&gt;payment.approve&lt;small&gt;Lost permission&lt;/small&gt;&lt;/div&gt;&lt;div class=&quot;ri-node ri-removed&quot; style=&quot;left:84%;top:58%&quot;&gt;Approval step&lt;small&gt;0 eligible actors&lt;/small&gt;&lt;/div&gt;
+                &lt;/div&gt;
+              &lt;/article&gt;
+            &lt;/div&gt;
+            &lt;aside&gt;
+              &lt;article class=&quot;ri-card&quot;&gt;&lt;h3&gt;Technical impact&lt;/h3&gt;&lt;ul class=&quot;ri-review-list&quot;&gt;&lt;li&gt;&lt;span&gt;Role assignments&lt;/span&gt;&lt;strong&gt;−1&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Effective permissions&lt;/span&gt;&lt;strong&gt;−3&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Applications affected&lt;/span&gt;&lt;strong&gt;1&lt;/strong&gt;&lt;/li&gt;&lt;li&gt;&lt;span&gt;Identities recalculated&lt;/span&gt;&lt;strong&gt;1&lt;/strong&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/article&gt;
+              &lt;article class=&quot;ri-card ri-recommendation&quot; style=&quot;margin-top:12px&quot;&gt;&lt;h3&gt;Safe mitigation candidate&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;Assign Finance Approver to Bob Chen&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Active Finance employee&lt;/li&gt;&lt;li&gt;Already has LedgerPro access&lt;/li&gt;&lt;li&gt;Covers evening shift&lt;/li&gt;&lt;li&gt;No separation-of-duties conflict&lt;/li&gt;&lt;/ul&gt;&lt;button class=&quot;ri-primary&quot; type=&quot;button&quot; style=&quot;width:100%&quot;&gt;Test This Recommendation&lt;/button&gt;&lt;div class=&quot;ri-compare&quot;&gt;&lt;div class=&quot;ri-compare-box&quot;&gt;&lt;strong&gt;Original&lt;/strong&gt;&lt;br&gt;&lt;span class=&quot;ri-danger&quot;&gt;1 blocked&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;ri-arrow&quot;&gt;→&lt;/div&gt;&lt;div class=&quot;ri-compare-box&quot;&gt;&lt;strong&gt;Tested branch&lt;/strong&gt;&lt;br&gt;&lt;span class=&quot;ri-safe&quot;&gt;0 blocked&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/article&gt;
+            &lt;/aside&gt;
+          &lt;/div&gt;
+        &lt;/section&gt;
+
+        &lt;section class=&quot;ri-page&quot; data-view=&quot;history&quot;&gt;
+          &lt;div class=&quot;ri-page-head&quot;&gt;&lt;div&gt;&lt;h2&gt;Scenario history&lt;/h2&gt;&lt;p&gt;Reopen a saved result, duplicate its input, or inspect a tested mitigation branch.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;ri-primary&quot; type=&quot;button&quot; data-jump=&quot;simulation&quot;&gt;+ New Simulation&lt;/button&gt;&lt;/div&gt;
+          &lt;article class=&quot;ri-card&quot;&gt;
+            &lt;div class=&quot;ri-history-tools&quot;&gt;&lt;input class=&quot;ri-search&quot; aria-label=&quot;Search scenarios&quot; placeholder=&quot;Search by name, target, or workflow&quot; /&gt;&lt;div class=&quot;ri-filter-row&quot;&gt;&lt;span class=&quot;ri-filter-chip ri-selected&quot;&gt;All&lt;/span&gt;&lt;span class=&quot;ri-filter-chip&quot;&gt;Critical&lt;/span&gt;&lt;span class=&quot;ri-filter-chip&quot;&gt;Revoke role&lt;/span&gt;&lt;span class=&quot;ri-filter-chip&quot;&gt;This week&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+            &lt;div class=&quot;ri-table-scroll&quot;&gt;&lt;table class=&quot;ri-table ri-history-table&quot;&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Scenario&lt;/th&gt;&lt;th&gt;Change&lt;/th&gt;&lt;th&gt;Target&lt;/th&gt;&lt;th&gt;Verdict&lt;/th&gt;&lt;th&gt;Branch&lt;/th&gt;&lt;th&gt;Run&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+              &lt;tr&gt;&lt;td&gt;&lt;strong&gt;Evening approver review&lt;/strong&gt;&lt;br&gt;&lt;span style=&quot;color:var(--ri-muted)&quot;&gt;Primary portfolio scenario&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Revoke role&lt;/td&gt;&lt;td&gt;Priya Sharma&lt;br&gt;Finance Approver&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-danger&quot;&gt;Critical&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Original + 1 tested&lt;/td&gt;&lt;td&gt;Aug 12, 10:42&lt;/td&gt;&lt;td class=&quot;ri-row-actions&quot; data-jump=&quot;results&quot;&gt;Open&lt;/td&gt;&lt;/tr&gt;
+              &lt;tr&gt;&lt;td&gt;&lt;strong&gt;Engineering lead offboard&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Offboard&lt;/td&gt;&lt;td&gt;Maya Patel&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;High&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Original&lt;/td&gt;&lt;td&gt;Aug 11, 16:08&lt;/td&gt;&lt;td class=&quot;ri-row-actions&quot;&gt;Open&lt;/td&gt;&lt;/tr&gt;
+              &lt;tr&gt;&lt;td&gt;&lt;strong&gt;Refund permission cleanup&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Remove permission&lt;/td&gt;&lt;td&gt;Senior Support&lt;br&gt;refund.approve&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-warn&quot;&gt;Medium&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Original&lt;/td&gt;&lt;td&gt;Aug 10, 11:21&lt;/td&gt;&lt;td class=&quot;ri-row-actions&quot;&gt;Open&lt;/td&gt;&lt;/tr&gt;
+              &lt;tr&gt;&lt;td&gt;&lt;strong&gt;Redundant viewer role&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Revoke role&lt;/td&gt;&lt;td&gt;Luis Kim&lt;br&gt;Report Viewer&lt;/td&gt;&lt;td&gt;&lt;span class=&quot;ri-pill ri-safe&quot;&gt;Low&lt;/span&gt;&lt;/td&gt;&lt;td&gt;Original&lt;/td&gt;&lt;td&gt;Aug 09, 09:50&lt;/td&gt;&lt;td class=&quot;ri-row-actions&quot;&gt;Open&lt;/td&gt;&lt;/tr&gt;
+            &lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;
+          &lt;/article&gt;
+        &lt;/section&gt;
+      &lt;/main&gt;
+    &lt;/section&gt;
+  &lt;/div&gt;
+  &lt;script&gt;
+    (() =&gt; {
+      const root = document.getElementById(&#x27;roleimpact-wireframes-v1&#x27;);
+      if (!root) return;
+      const valid = new Set([&#x27;dashboard&#x27;,&#x27;explorer&#x27;,&#x27;entity&#x27;,&#x27;simulation&#x27;,&#x27;results&#x27;,&#x27;history&#x27;]);
+      const show = (name) =&gt; {
+        if (!valid.has(name)) name = &#x27;dashboard&#x27;;
+        root.querySelectorAll(&#x27;[data-view]&#x27;).forEach(el =&gt; el.classList.toggle(&#x27;ri-visible&#x27;, el.dataset.view === name));
+        root.querySelectorAll(&#x27;[data-screen]&#x27;).forEach(el =&gt; el.setAttribute(&#x27;aria-pressed&#x27;, String(el.dataset.screen === name)));
+        root.querySelectorAll(&#x27;[data-nav]&#x27;).forEach(el =&gt; el.classList.toggle(&#x27;ri-active&#x27;, el.dataset.nav === name || (name === &#x27;entity&#x27; &amp;&amp; el.dataset.nav === &#x27;explorer&#x27;) || (name === &#x27;results&#x27; &amp;&amp; el.dataset.nav === &#x27;history&#x27;) || (name === &#x27;simulation&#x27; &amp;&amp; el.dataset.nav === &#x27;history&#x27;)));
+      };
+      root.addEventListener(&#x27;click&#x27;, (event) =&gt; {
+        const target = event.target.closest(&#x27;[data-screen],[data-jump]&#x27;);
+        if (target) show(target.dataset.screen || target.dataset.jump);
+      });
+      const requested = new URLSearchParams(window.location.search).get(&#x27;screen&#x27;) || window.location.hash.slice(1);
+      show(requested || &#x27;dashboard&#x27;);
+    })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

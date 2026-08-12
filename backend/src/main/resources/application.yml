@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: roleimpact-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/roleimpact}
+    username: ${DB_USERNAME:roleimpact}
+    password: ${DB_PASSWORD:roleimpact}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+roleimpact:
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}

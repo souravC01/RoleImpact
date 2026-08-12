@@ -1,0 +1,446 @@
+<div id="roleimpact-wireframes-v1" class="ri-root">
+  <style>
+    #roleimpact-wireframes-v1 {
+      color-scheme: light dark;
+      --ri-page: light-dark(#eef1f4, #15191d);
+      --ri-surface: light-dark(#ffffff, #1d2329);
+      --ri-surface-soft: light-dark(#f5f6f8, #252c33);
+      --ri-line: light-dark(#aeb7c2, #66717c);
+      --ri-line-soft: light-dark(#d7dde3, #39434c);
+      --ri-ink: light-dark(#20262d, #edf1f4);
+      --ri-muted: light-dark(#68727d, #aeb8c2);
+      --ri-accent: light-dark(#315f82, #8ab4d4);
+      --ri-danger: light-dark(#8a3e45, #e49ca3);
+      --ri-warn: light-dark(#806225, #e1c171);
+      --ri-safe: light-dark(#3f6d57, #8ec2a5);
+      --ri-shadow: light-dark(0 16px 44px rgba(37, 45, 55, .12), 0 16px 44px rgba(0, 0, 0, .28));
+      display: block;
+      min-height: 100%;
+      padding: 18px;
+      background: var(--ri-page);
+      color: var(--ri-ink);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    #roleimpact-wireframes-v1 * { box-sizing: border-box; }
+    #roleimpact-wireframes-v1 button,
+    #roleimpact-wireframes-v1 input,
+    #roleimpact-wireframes-v1 select { font: inherit; }
+    #roleimpact-wireframes-v1 button:focus-visible,
+    #roleimpact-wireframes-v1 input:focus-visible,
+    #roleimpact-wireframes-v1 select:focus-visible { outline: 3px solid color-mix(in srgb, var(--ri-accent) 55%, transparent); outline-offset: 2px; }
+    #roleimpact-wireframes-v1 .ri-viewer { max-width: 1380px; margin: 0 auto; }
+    #roleimpact-wireframes-v1 .ri-viewer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+    #roleimpact-wireframes-v1 .ri-kicker { margin: 0 0 4px; color: var(--ri-muted); font: 700 11px/1.2 "Segoe UI", Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    #roleimpact-wireframes-v1 .ri-viewer-title { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: -.02em; }
+    #roleimpact-wireframes-v1 .ri-screen-picker { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    #roleimpact-wireframes-v1 .ri-screen-picker button { border: 1px solid var(--ri-line); background: var(--ri-surface); color: var(--ri-ink); border-radius: 7px; padding: 7px 10px; cursor: pointer; font-size: 12px; }
+    #roleimpact-wireframes-v1 .ri-screen-picker button[aria-pressed="true"] { color: var(--ri-surface); background: var(--ri-accent); border-color: var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-product { min-height: 780px; display: grid; grid-template-columns: 210px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--ri-line); border-radius: 12px; background: var(--ri-surface); box-shadow: var(--ri-shadow); }
+    #roleimpact-wireframes-v1 .ri-sidebar { padding: 18px 14px; background: var(--ri-surface-soft); border-right: 1px solid var(--ri-line-soft); display: flex; flex-direction: column; }
+    #roleimpact-wireframes-v1 .ri-brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 17px; margin-bottom: 24px; }
+    #roleimpact-wireframes-v1 .ri-brand-mark { width: 27px; height: 27px; border: 2px solid var(--ri-ink); border-radius: 7px; display: grid; place-items: center; font-size: 12px; }
+    #roleimpact-wireframes-v1 .ri-nav { display: grid; gap: 6px; }
+    #roleimpact-wireframes-v1 .ri-nav-item { padding: 10px 11px; border-radius: 7px; color: var(--ri-muted); font-size: 13px; font-weight: 650; }
+    #roleimpact-wireframes-v1 .ri-nav-item.ri-active { color: var(--ri-ink); background: var(--ri-surface); border: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-sidebar-note { margin-top: auto; padding: 10px; border: 1px dashed var(--ri-line); border-radius: 7px; color: var(--ri-muted); font-size: 11px; line-height: 1.4; }
+    #roleimpact-wireframes-v1 .ri-main { min-width: 0; }
+    #roleimpact-wireframes-v1 .ri-topbar { min-height: 62px; border-bottom: 1px solid var(--ri-line-soft); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px; }
+    #roleimpact-wireframes-v1 .ri-org { font-size: 12px; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-demo-user { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--ri-line); display: grid; place-items: center; font-weight: 750; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-page { padding: 22px; }
+    #roleimpact-wireframes-v1 .ri-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+    #roleimpact-wireframes-v1 .ri-page-head h2 { margin: 0 0 5px; font-size: 22px; letter-spacing: -.02em; }
+    #roleimpact-wireframes-v1 .ri-page-head p { margin: 0; max-width: 720px; color: var(--ri-muted); font-size: 12px; line-height: 1.5; }
+    #roleimpact-wireframes-v1 .ri-primary,
+    #roleimpact-wireframes-v1 .ri-secondary,
+    #roleimpact-wireframes-v1 .ri-ghost { border-radius: 7px; padding: 9px 13px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    #roleimpact-wireframes-v1 .ri-primary { border: 1px solid var(--ri-accent); background: var(--ri-accent); color: var(--ri-surface); }
+    #roleimpact-wireframes-v1 .ri-secondary { border: 1px solid var(--ri-line); background: var(--ri-surface); color: var(--ri-ink); }
+    #roleimpact-wireframes-v1 .ri-ghost { border: 1px dashed var(--ri-line); background: transparent; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-card { border: 1px solid var(--ri-line-soft); background: var(--ri-surface); border-radius: 9px; padding: 14px; min-width: 0; }
+    #roleimpact-wireframes-v1 .ri-card h3 { margin: 0 0 10px; font-size: 13px; }
+    #roleimpact-wireframes-v1 .ri-card p { margin: 0; color: var(--ri-muted); font-size: 12px; line-height: 1.45; }
+    #roleimpact-wireframes-v1 .ri-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    #roleimpact-wireframes-v1 .ri-kpi { min-height: 90px; }
+    #roleimpact-wireframes-v1 .ri-kpi-label { color: var(--ri-muted); font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-kpi-value { margin: 8px 0 3px; font: 800 27px/1 "Segoe UI", Arial, sans-serif; }
+    #roleimpact-wireframes-v1 .ri-kpi-sub { font-size: 11px; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-dashboard-grid { display: grid; grid-template-columns: 1.35fr .9fr; gap: 14px; }
+    #roleimpact-wireframes-v1 .ri-span-two { grid-column: 1 / -1; }
+    #roleimpact-wireframes-v1 .ri-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-table th { color: var(--ri-muted); text-transform: uppercase; letter-spacing: .06em; font-size: 9px; text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-table td { padding: 9px 6px; border-bottom: 1px solid var(--ri-line-soft); vertical-align: middle; }
+    #roleimpact-wireframes-v1 .ri-table tr:last-child td { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 999px; border: 1px solid currentColor; font-weight: 700; font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    #roleimpact-wireframes-v1 .ri-safe { color: var(--ri-safe); }
+    #roleimpact-wireframes-v1 .ri-warn { color: var(--ri-warn); }
+    #roleimpact-wireframes-v1 .ri-danger { color: var(--ri-danger); }
+    #roleimpact-wireframes-v1 .ri-dependency { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-dependency:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-dependency strong { display: block; font-size: 11px; margin-bottom: 3px; }
+    #roleimpact-wireframes-v1 .ri-dependency span { color: var(--ri-muted); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-explorer { display: grid; grid-template-columns: 250px minmax(360px, 1fr) 270px; gap: 12px; min-height: 610px; }
+    #roleimpact-wireframes-v1 .ri-search { width: 100%; border: 1px solid var(--ri-line); border-radius: 7px; padding: 9px 10px; background: var(--ri-surface); color: var(--ri-ink); }
+    #roleimpact-wireframes-v1 .ri-filter-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0; }
+    #roleimpact-wireframes-v1 .ri-filter-chip { border: 1px solid var(--ri-line); border-radius: 999px; padding: 4px 7px; font-size: 9px; background: var(--ri-surface); color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-filter-chip.ri-selected { background: var(--ri-surface-soft); color: var(--ri-ink); font-weight: 700; }
+    #roleimpact-wireframes-v1 .ri-entity-list { display: grid; gap: 6px; margin-top: 10px; }
+    #roleimpact-wireframes-v1 .ri-entity-row { padding: 9px; border: 1px solid var(--ri-line-soft); border-radius: 7px; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-entity-row.ri-selected { border-color: var(--ri-accent); box-shadow: inset 3px 0 var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-entity-row span { display: block; color: var(--ri-muted); font-size: 9px; margin-top: 2px; }
+    #roleimpact-wireframes-v1 .ri-graph { position: relative; overflow: hidden; background: var(--ri-surface-soft); border: 1px solid var(--ri-line-soft); border-radius: 9px; min-height: 610px; }
+    #roleimpact-wireframes-v1 .ri-graph-toolbar { position: absolute; inset: 10px 10px auto; display: flex; justify-content: space-between; z-index: 3; }
+    #roleimpact-wireframes-v1 .ri-graph-toolbar span { background: var(--ri-surface); border: 1px solid var(--ri-line); border-radius: 6px; padding: 6px 8px; font-size: 9px; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-graph svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #roleimpact-wireframes-v1 .ri-graph line,
+    #roleimpact-wireframes-v1 .ri-graph path { stroke: var(--ri-line); stroke-width: 1.5; fill: none; }
+    #roleimpact-wireframes-v1 .ri-graph .ri-removed-line { stroke: var(--ri-danger); stroke-dasharray: 7 5; stroke-width: 2; }
+    #roleimpact-wireframes-v1 .ri-node { position: absolute; transform: translate(-50%, -50%); width: 120px; padding: 9px; border: 1px solid var(--ri-line); border-radius: 8px; background: var(--ri-surface); text-align: center; font-size: 10px; font-weight: 700; z-index: 2; }
+    #roleimpact-wireframes-v1 .ri-node small { display: block; margin-top: 3px; color: var(--ri-muted); font-size: 8px; font-weight: 500; }
+    #roleimpact-wireframes-v1 .ri-node.ri-focus { border: 2px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-node.ri-removed { border: 2px dashed var(--ri-danger); color: var(--ri-danger); }
+    #roleimpact-wireframes-v1 .ri-detail-pair { display: grid; gap: 3px; margin-bottom: 11px; }
+    #roleimpact-wireframes-v1 .ri-detail-pair span { color: var(--ri-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+    #roleimpact-wireframes-v1 .ri-detail-pair strong { font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-detail-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(270px, .75fr); gap: 14px; }
+    #roleimpact-wireframes-v1 .ri-profile { display: flex; gap: 14px; align-items: center; }
+    #roleimpact-wireframes-v1 .ri-avatar { width: 54px; height: 54px; border-radius: 50%; background: var(--ri-surface-soft); border: 1px solid var(--ri-line); display: grid; place-items: center; font-weight: 800; }
+    #roleimpact-wireframes-v1 .ri-profile h3 { margin: 0 0 4px; font-size: 17px; }
+    #roleimpact-wireframes-v1 .ri-profile p { margin: 0; color: var(--ri-muted); font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-tabs { display: flex; gap: 15px; margin: 15px 0 10px; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-tab { padding: 8px 0; color: var(--ri-muted); font-size: 10px; font-weight: 700; }
+    #roleimpact-wireframes-v1 .ri-tab.ri-active { color: var(--ri-ink); border-bottom: 2px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    #roleimpact-wireframes-v1 .ri-access-item { padding: 10px; border: 1px solid var(--ri-line-soft); border-radius: 7px; }
+    #roleimpact-wireframes-v1 .ri-access-item strong { display: block; font-size: 11px; margin-bottom: 3px; }
+    #roleimpact-wireframes-v1 .ri-access-item span { color: var(--ri-muted); font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-workflow-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid var(--ri-line-soft); }
+    #roleimpact-wireframes-v1 .ri-workflow-card:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-workflow-card strong { display: block; font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-workflow-card span { color: var(--ri-muted); font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-stepper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 4px 0 18px; }
+    #roleimpact-wireframes-v1 .ri-step { position: relative; display: flex; align-items: center; gap: 8px; color: var(--ri-muted); font-size: 10px; font-weight: 700; }
+    #roleimpact-wireframes-v1 .ri-step::after { content: ""; height: 1px; background: var(--ri-line); flex: 1; }
+    #roleimpact-wireframes-v1 .ri-step:last-child::after { display: none; }
+    #roleimpact-wireframes-v1 .ri-step-num { width: 25px; height: 25px; border-radius: 50%; border: 1px solid var(--ri-line); display: grid; place-items: center; background: var(--ri-surface); }
+    #roleimpact-wireframes-v1 .ri-step.ri-current { color: var(--ri-ink); }
+    #roleimpact-wireframes-v1 .ri-step.ri-current .ri-step-num { background: var(--ri-accent); color: var(--ri-surface); border-color: var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-sim-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 14px; }
+    #roleimpact-wireframes-v1 .ri-choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    #roleimpact-wireframes-v1 .ri-choice { border: 1px solid var(--ri-line); border-radius: 8px; padding: 11px; min-height: 92px; }
+    #roleimpact-wireframes-v1 .ri-choice.ri-selected { border: 2px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-choice strong { display: block; font-size: 11px; margin-bottom: 6px; }
+    #roleimpact-wireframes-v1 .ri-choice span { color: var(--ri-muted); font-size: 9px; line-height: 1.4; }
+    #roleimpact-wireframes-v1 .ri-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 13px; }
+    #roleimpact-wireframes-v1 label { display: grid; gap: 5px; color: var(--ri-muted); font-size: 10px; font-weight: 700; }
+    #roleimpact-wireframes-v1 select { width: 100%; border: 1px solid var(--ri-line); border-radius: 7px; background: var(--ri-surface); color: var(--ri-ink); padding: 9px; }
+    #roleimpact-wireframes-v1 .ri-review-list { margin: 0; padding: 0; list-style: none; }
+    #roleimpact-wireframes-v1 .ri-review-list li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--ri-line-soft); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-review-list li:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-review-list span { color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-safe-note { margin-top: 12px; border: 1px dashed var(--ri-line); padding: 9px; border-radius: 7px; color: var(--ri-muted); font-size: 9px; line-height: 1.45; }
+    #roleimpact-wireframes-v1 .ri-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    #roleimpact-wireframes-v1 .ri-verdict { border: 2px solid var(--ri-danger); border-radius: 9px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
+    #roleimpact-wireframes-v1 .ri-verdict h3 { margin: 0 0 4px; font-size: 16px; }
+    #roleimpact-wireframes-v1 .ri-verdict p { margin: 0; color: var(--ri-muted); font-size: 11px; }
+    #roleimpact-wireframes-v1 .ri-severity { font-weight: 850; font-size: 12px; color: var(--ri-danger); white-space: nowrap; }
+    #roleimpact-wireframes-v1 .ri-results-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(290px, .8fr); gap: 13px; }
+    #roleimpact-wireframes-v1 .ri-impact-row { display: grid; grid-template-columns: 95px 1fr 90px; gap: 9px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ri-line-soft); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-impact-row:last-child { border-bottom: 0; }
+    #roleimpact-wireframes-v1 .ri-path { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+    #roleimpact-wireframes-v1 .ri-path span { border: 1px solid var(--ri-line); border-radius: 5px; padding: 5px 7px; font-size: 9px; background: var(--ri-surface-soft); }
+    #roleimpact-wireframes-v1 .ri-path b { color: var(--ri-muted); font-size: 10px; }
+    #roleimpact-wireframes-v1 .ri-mini-graph { position: relative; min-height: 270px; margin-top: 8px; }
+    #roleimpact-wireframes-v1 .ri-mini-graph .ri-node { width: 105px; }
+    #roleimpact-wireframes-v1 .ri-recommendation { border-left: 4px solid var(--ri-accent); }
+    #roleimpact-wireframes-v1 .ri-recommendation ul { padding-left: 17px; color: var(--ri-muted); font-size: 10px; line-height: 1.5; }
+    #roleimpact-wireframes-v1 .ri-compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: stretch; margin-top: 10px; }
+    #roleimpact-wireframes-v1 .ri-compare-box { padding: 9px; border: 1px solid var(--ri-line-soft); border-radius: 7px; font-size: 9px; }
+    #roleimpact-wireframes-v1 .ri-arrow { display: grid; place-items: center; color: var(--ri-muted); }
+    #roleimpact-wireframes-v1 .ri-history-tools { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    #roleimpact-wireframes-v1 .ri-history-tools .ri-search { max-width: 360px; }
+    #roleimpact-wireframes-v1 .ri-history-table th,
+    #roleimpact-wireframes-v1 .ri-history-table td { padding: 11px 8px; }
+    #roleimpact-wireframes-v1 .ri-row-actions { color: var(--ri-accent); font-weight: 700; white-space: nowrap; }
+    #roleimpact-wireframes-v1 [data-view] { display: none; }
+    #roleimpact-wireframes-v1 [data-view].ri-visible { display: block; }
+    @media (max-width: 980px) {
+      #roleimpact-wireframes-v1 .ri-product { grid-template-columns: 165px minmax(0, 1fr); }
+      #roleimpact-wireframes-v1 .ri-explorer { grid-template-columns: 210px 1fr; }
+      #roleimpact-wireframes-v1 .ri-explorer > aside:last-child { grid-column: 1 / -1; }
+      #roleimpact-wireframes-v1 .ri-kpis { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 800px) {
+      #roleimpact-wireframes-v1 { padding: 10px; width: 100%; max-width: 100%; overflow-x: hidden; }
+      #roleimpact-wireframes-v1 .ri-viewer,
+      #roleimpact-wireframes-v1 .ri-product,
+      #roleimpact-wireframes-v1 .ri-main,
+      #roleimpact-wireframes-v1 .ri-page,
+      #roleimpact-wireframes-v1 .ri-sidebar { width: 100%; max-width: 100%; min-width: 0; }
+      #roleimpact-wireframes-v1 .ri-viewer-head { align-items: flex-start; flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-screen-picker { justify-content: flex-start; width: calc(100vw - 36px); max-width: 100%; }
+      #roleimpact-wireframes-v1 .ri-screen-picker button { white-space: normal; }
+      #roleimpact-wireframes-v1 .ri-product { display: block; min-height: 0; }
+      #roleimpact-wireframes-v1 .ri-sidebar { border-right: 0; border-bottom: 1px solid var(--ri-line-soft); padding: 11px; }
+      #roleimpact-wireframes-v1 .ri-brand { margin-bottom: 10px; }
+      #roleimpact-wireframes-v1 .ri-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      #roleimpact-wireframes-v1 .ri-nav-item { min-width: 0; padding: 8px 3px; text-align: center; font-size: 9px; overflow: hidden; }
+      #roleimpact-wireframes-v1 .ri-sidebar-note { display: none; }
+      #roleimpact-wireframes-v1 .ri-topbar { padding: 10px 12px; flex-wrap: wrap; }
+      #roleimpact-wireframes-v1 .ri-org { min-width: 0; overflow-wrap: anywhere; }
+      #roleimpact-wireframes-v1 .ri-page { padding: 13px; }
+      #roleimpact-wireframes-v1 .ri-page-head { flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-kpis,
+      #roleimpact-wireframes-v1 .ri-dashboard-grid,
+      #roleimpact-wireframes-v1 .ri-detail-layout,
+      #roleimpact-wireframes-v1 .ri-sim-grid,
+      #roleimpact-wireframes-v1 .ri-results-grid,
+      #roleimpact-wireframes-v1 .ri-explorer,
+      #roleimpact-wireframes-v1 .ri-access-grid { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-choice-grid { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-form-row { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-explorer > aside:last-child { grid-column: auto; }
+      #roleimpact-wireframes-v1 .ri-graph { min-height: 480px; }
+      #roleimpact-wireframes-v1 .ri-verdict { align-items: flex-start; flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-verdict h3,
+      #roleimpact-wireframes-v1 .ri-verdict p { overflow-wrap: anywhere; }
+      #roleimpact-wireframes-v1 .ri-path { overflow-x: auto; }
+      #roleimpact-wireframes-v1 .ri-mini-graph .ri-node { width: 88px; overflow-wrap: anywhere; }
+      #roleimpact-wireframes-v1 .ri-impact-row { grid-template-columns: 1fr; }
+      #roleimpact-wireframes-v1 .ri-history-tools { flex-direction: column; }
+      #roleimpact-wireframes-v1 .ri-history-table { min-width: 680px; }
+      #roleimpact-wireframes-v1 .ri-table-scroll { overflow-x: auto; }
+    }
+  </style>
+
+  <div class="ri-viewer">
+    <header class="ri-viewer-head">
+      <div>
+        <p class="ri-kicker">Low-fidelity interaction model</p>
+        <h1 class="ri-viewer-title">RoleImpact wireframes</h1>
+      </div>
+      <nav class="ri-screen-picker" aria-label="Wireframe screens">
+        <button type="button" data-screen="dashboard" aria-pressed="true">1 Dashboard</button>
+        <button type="button" data-screen="explorer" aria-pressed="false">2 Explorer</button>
+        <button type="button" data-screen="entity" aria-pressed="false">3 Entity</button>
+        <button type="button" data-screen="simulation" aria-pressed="false">4 New simulation</button>
+        <button type="button" data-screen="results" aria-pressed="false">5 Results</button>
+        <button type="button" data-screen="history" aria-pressed="false">6 History</button>
+      </nav>
+    </header>
+
+    <section class="ri-product" aria-label="RoleImpact product wireframe">
+      <aside class="ri-sidebar">
+        <div class="ri-brand"><span class="ri-brand-mark">RI</span><span>RoleImpact</span></div>
+        <nav class="ri-nav" aria-label="Primary navigation">
+          <div class="ri-nav-item ri-active" data-nav="dashboard">Dashboard</div>
+          <div class="ri-nav-item" data-nav="explorer">Explorer</div>
+          <div class="ri-nav-item" data-nav="history">Simulations</div>
+        </nav>
+        <div class="ri-sidebar-note">Read-only demo<br>Harborline Commerce<br>Baseline v1</div>
+      </aside>
+      <main class="ri-main">
+        <header class="ri-topbar">
+          <div class="ri-org">Harborline Commerce &nbsp;/&nbsp; Access continuity workspace</div>
+          <div class="ri-demo-user" aria-label="Demo reviewer">DR</div>
+        </header>
+
+        <section class="ri-page ri-visible" data-view="dashboard">
+          <div class="ri-page-head">
+            <div><h2>Access health overview</h2><p>See fragile workflow coverage before starting a what-if scenario.</p></div>
+            <button class="ri-primary" type="button" data-jump="simulation">+ New Simulation</button>
+          </div>
+          <div class="ri-kpis">
+            <article class="ri-card ri-kpi"><div class="ri-kpi-label">Employees</div><div class="ri-kpi-value">25</div><div class="ri-kpi-sub">5 teams / 3 regions</div></article>
+            <article class="ri-card ri-kpi"><div class="ri-kpi-label">Roles</div><div class="ri-kpi-value">8</div><div class="ri-kpi-sub">4 sensitive roles</div></article>
+            <article class="ri-card ri-kpi"><div class="ri-kpi-label">Applications</div><div class="ri-kpi-value">6</div><div class="ri-kpi-sub">22 permissions</div></article>
+            <article class="ri-card ri-kpi"><div class="ri-kpi-label">Workflow health</div><div class="ri-kpi-value">3</div><div class="ri-kpi-sub"><span class="ri-pill ri-safe">2 operational</span> &nbsp;<span class="ri-pill ri-warn">1 degraded</span></div></article>
+          </div>
+          <div class="ri-dashboard-grid">
+            <article class="ri-card">
+              <h3>Workflow coverage</h3>
+              <table class="ri-table"><thead><tr><th>Workflow</th><th>Criticality</th><th>Coverage</th><th>Status</th></tr></thead><tbody>
+                <tr><td>Vendor Payment</td><td>Critical</td><td>3 of 4 steps resilient</td><td><span class="ri-pill ri-warn">Degraded</span></td></tr>
+                <tr><td>Customer Refund</td><td>High</td><td>4 of 4 steps resilient</td><td><span class="ri-pill ri-safe">Operational</span></td></tr>
+                <tr><td>Production Deployment</td><td>Critical</td><td>3 of 3 steps resilient</td><td><span class="ri-pill ri-safe">Operational</span></td></tr>
+              </tbody></table>
+            </article>
+            <article class="ri-card">
+              <h3>Single-person dependencies</h3>
+              <div class="ri-dependency"><div><strong>Evening payment approval</strong><span>Vendor Payment / Priya Sharma only</span></div><span class="ri-pill ri-warn">1 actor</span></div>
+              <div class="ri-dependency"><div><strong>Month-end close approval</strong><span>Finance Operations / Ana Ruiz only</span></div><span class="ri-pill ri-warn">1 actor</span></div>
+              <button class="ri-secondary" type="button" data-jump="explorer" style="margin-top:12px">Explore relationships</button>
+            </article>
+            <article class="ri-card ri-span-two">
+              <h3>Recent simulations</h3>
+              <table class="ri-table"><thead><tr><th>Scenario</th><th>Change</th><th>Target</th><th>Verdict</th><th>Run</th></tr></thead><tbody>
+                <tr><td>Evening approver review</td><td>Revoke role</td><td>Priya Sharma</td><td><span class="ri-pill ri-danger">Critical</span></td><td>Today, 10:42</td></tr>
+                <tr><td>Viewer cleanup</td><td>Revoke role</td><td>Luis Kim</td><td><span class="ri-pill ri-safe">Low</span></td><td>Yesterday</td></tr>
+              </tbody></table>
+            </article>
+          </div>
+        </section>
+
+        <section class="ri-page" data-view="explorer">
+          <div class="ri-page-head">
+            <div><h2>Organization Explorer</h2><p>Find an entity, inspect its relationships, then begin a contextual simulation.</p></div>
+            <button class="ri-primary" type="button" data-jump="simulation">Simulate a change</button>
+          </div>
+          <div class="ri-explorer">
+            <aside class="ri-card">
+              <input class="ri-search" aria-label="Search entities" value="Priya" />
+              <div class="ri-filter-row"><span class="ri-filter-chip ri-selected">Employees</span><span class="ri-filter-chip">Roles</span><span class="ri-filter-chip">Apps</span><span class="ri-filter-chip">Workflows</span></div>
+              <div class="ri-entity-list">
+                <div class="ri-entity-row ri-selected">Priya Sharma<span>Finance Operations / Evening</span></div>
+                <div class="ri-entity-row">Priya Nair<span>Customer Support / Day</span></div>
+              </div>
+            </aside>
+            <div class="ri-graph" aria-label="Relationship graph">
+              <div class="ri-graph-toolbar"><span>Affected paths only</span><span>− &nbsp; 100% &nbsp; +</span></div>
+              <svg viewBox="0 0 620 600" preserveAspectRatio="none" aria-hidden="true"><line x1="125" y1="300" x2="270" y2="180"/><line x1="125" y1="300" x2="270" y2="410"/><line x1="270" y1="180" x2="430" y2="235"/><line x1="270" y1="410" x2="430" y2="365"/><line x1="430" y1="235" x2="530" y2="300"/><line x1="430" y1="365" x2="530" y2="300"/></svg>
+              <div class="ri-node ri-focus" style="left:20%;top:50%">Priya Sharma<small>Employee</small></div>
+              <div class="ri-node" style="left:44%;top:30%">Finance Approver<small>Role</small></div>
+              <div class="ri-node" style="left:44%;top:68%">Finance Analyst<small>Role</small></div>
+              <div class="ri-node" style="left:70%;top:39%">payment.approve<small>Permission</small></div>
+              <div class="ri-node" style="left:70%;top:61%">payment.create<small>Permission</small></div>
+              <div class="ri-node" style="left:86%;top:50%">Vendor Payment<small>Workflow</small></div>
+            </div>
+            <aside class="ri-card">
+              <h3>Selected entity</h3>
+              <div class="ri-detail-pair"><span>Employee</span><strong>Priya Sharma</strong></div>
+              <div class="ri-detail-pair"><span>Team</span><strong>Finance Operations</strong></div>
+              <div class="ri-detail-pair"><span>Region / Shift</span><strong>Canada East / Evening</strong></div>
+              <div class="ri-detail-pair"><span>Effective access</span><strong>2 roles / 6 permissions</strong></div>
+              <div class="ri-detail-pair"><span>Workflow coverage</span><strong>2 steps / 1 sole dependency</strong></div>
+              <button class="ri-secondary" type="button" data-jump="entity" style="width:100%">Open full details</button>
+            </aside>
+          </div>
+        </section>
+
+        <section class="ri-page" data-view="entity">
+          <div class="ri-page-head">
+            <div><p style="margin-bottom:4px">Explorer / Employees</p><h2>Employee details</h2></div>
+            <button class="ri-primary" type="button" data-jump="simulation">Simulate a change</button>
+          </div>
+          <div class="ri-detail-layout">
+            <div>
+              <article class="ri-card">
+                <div class="ri-profile"><div class="ri-avatar">PS</div><div><h3>Priya Sharma</h3><p>Finance Operations · Canada East · Evening shift</p><div style="margin-top:7px"><span class="ri-pill ri-safe">Active</span></div></div></div>
+                <div class="ri-tabs"><span class="ri-tab ri-active">Effective access</span><span class="ri-tab">Roles</span><span class="ri-tab">Applications</span><span class="ri-tab">Workflow steps</span></div>
+                <div class="ri-access-grid">
+                  <div class="ri-access-item"><strong>Finance Approver</strong><span>Direct role · High sensitivity · 3 permissions</span></div>
+                  <div class="ri-access-item"><strong>Finance Analyst</strong><span>Direct role · Medium sensitivity · 3 permissions</span></div>
+                  <div class="ri-access-item"><strong>payment.approve</strong><span>LedgerPro / High-value payments</span></div>
+                  <div class="ri-access-item"><strong>payment.create</strong><span>LedgerPro / Vendor payments</span></div>
+                  <div class="ri-access-item"><strong>vendor.read</strong><span>Vendor Portal / Supplier profile</span></div>
+                  <div class="ri-access-item"><strong>ledger.read</strong><span>LedgerPro / General ledger</span></div>
+                </div>
+              </article>
+            </div>
+            <aside class="ri-card">
+              <h3>Business workflow coverage</h3>
+              <div class="ri-workflow-card"><div><strong>Vendor Payment</strong><span>High-value approval / sole evening actor</span></div><span class="ri-pill ri-warn">Fragile</span></div>
+              <div class="ri-workflow-card"><div><strong>Month-End Close</strong><span>Approval / backup actor</span></div><span class="ri-pill ri-safe">Covered</span></div>
+              <h3 style="margin-top:18px">Access origin</h3>
+              <p>Every effective permission links back to a current role assignment. No direct grants exist for this employee.</p>
+              <button class="ri-secondary" type="button" data-jump="explorer" style="width:100%;margin-top:13px">View relationship graph</button>
+            </aside>
+          </div>
+        </section>
+
+        <section class="ri-page" data-view="simulation">
+          <div class="ri-page-head"><div><h2>New simulation</h2><p>Define the access removal, review its current relationships, then analyze an isolated scenario.</p></div></div>
+          <div class="ri-stepper"><div class="ri-step ri-current"><span class="ri-step-num">1</span>Change and target</div><div class="ri-step"><span class="ri-step-num">2</span>Review current access</div><div class="ri-step"><span class="ri-step-num">3</span>Run analysis</div></div>
+          <div class="ri-sim-grid">
+            <article class="ri-card">
+              <h3>1. What should be simulated?</h3>
+              <div class="ri-choice-grid">
+                <div class="ri-choice"><strong>Offboard employee</strong><span>Remove every active role assignment for one employee.</span></div>
+                <div class="ri-choice ri-selected"><strong>Revoke role</strong><span>Remove one role from one employee and recalculate inherited access.</span></div>
+                <div class="ri-choice"><strong>Remove permission</strong><span>Change a role definition and recalculate every role holder.</span></div>
+              </div>
+              <div class="ri-form-row">
+                <label>Employee<select><option>Priya Sharma — Finance Operations</option></select></label>
+                <label>Role to revoke<select><option>Finance Approver</option></select></label>
+              </div>
+              <div class="ri-safe-note"><strong>Safe simulation.</strong> No role or permission will be changed in the Harborline baseline. The analysis runs against baseline v1.</div>
+            </article>
+            <aside class="ri-card">
+              <h3>2. Review exact proposal</h3>
+              <ul class="ri-review-list">
+                <li><span>Employee</span><strong>Priya Sharma</strong></li><li><span>Role removed</span><strong>Finance Approver</strong></li><li><span>Direct permissions</span><strong>3 affected</strong></li><li><span>Applications</span><strong>LedgerPro</strong></li><li><span>Connected workflows</span><strong>2</strong></li>
+              </ul>
+              <h3 style="margin-top:16px">Current risk signal</h3>
+              <p><span class="ri-pill ri-warn">Sole evening approver</span></p>
+              <div class="ri-actions"><button class="ri-secondary" type="button">Cancel</button><button class="ri-primary" type="button" data-jump="results">Run Impact Analysis</button></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="ri-page" data-view="results">
+          <div class="ri-page-head"><div><p style="margin-bottom:4px">Simulation RI-1042 / Baseline v1</p><h2>Simulation results</h2></div><div><button class="ri-secondary" type="button">Save scenario</button></div></div>
+          <div class="ri-verdict"><div><h3>Vendor Payment is blocked for evening high-value approvals</h3><p>Revoking Finance Approver from Priya removes the final eligible evening actor. One additional workflow becomes fragile.</p></div><div class="ri-severity">CRITICAL IMPACT</div></div>
+          <div class="ri-results-grid">
+            <div>
+              <article class="ri-card">
+                <h3>Business impact first</h3>
+                <div class="ri-impact-row"><strong>Vendor Payment</strong><span>High-value approval has 0 eligible evening actors.</span><span class="ri-pill ri-danger">Blocked</span></div>
+                <div class="ri-impact-row"><strong>Month-End Close</strong><span>Approval remains possible but has only 1 eligible actor.</span><span class="ri-pill ri-warn">Degraded</span></div>
+              </article>
+              <article class="ri-card" style="margin-top:12px">
+                <h3>Why this happens</h3><p>The engine traces the removed assignment to the capability required by the workflow step.</p>
+                <div class="ri-path"><span>Priya Sharma</span><b>›</b><span>Finance Approver</span><b>›</b><span>payment.approve</span><b>›</b><span>High-value approval</span><b>›</b><span>Vendor Payment</span></div>
+              </article>
+              <article class="ri-card" style="margin-top:12px">
+                <h3>Focused before / after graph</h3>
+                <div class="ri-mini-graph ri-graph">
+                  <div class="ri-graph-toolbar"><span>After</span><span>− &nbsp; 100% &nbsp; +</span></div>
+                  <svg viewBox="0 0 650 270" preserveAspectRatio="none" aria-hidden="true"><line class="ri-removed-line" x1="105" y1="150" x2="250" y2="90"/><line class="ri-removed-line" x1="250" y1="90" x2="390" y2="150"/><line class="ri-removed-line" x1="390" y1="150" x2="545" y2="150"/></svg>
+                  <div class="ri-node" style="left:16%;top:58%">Priya Sharma<small>Employee</small></div><div class="ri-node ri-removed" style="left:39%;top:35%">Finance Approver<small>Removed role</small></div><div class="ri-node ri-removed" style="left:61%;top:58%">payment.approve<small>Lost permission</small></div><div class="ri-node ri-removed" style="left:84%;top:58%">Approval step<small>0 eligible actors</small></div>
+                </div>
+              </article>
+            </div>
+            <aside>
+              <article class="ri-card"><h3>Technical impact</h3><ul class="ri-review-list"><li><span>Role assignments</span><strong>−1</strong></li><li><span>Effective permissions</span><strong>−3</strong></li><li><span>Applications affected</span><strong>1</strong></li><li><span>Identities recalculated</span><strong>1</strong></li></ul></article>
+              <article class="ri-card ri-recommendation" style="margin-top:12px"><h3>Safe mitigation candidate</h3><p><strong>Assign Finance Approver to Bob Chen</strong></p><ul><li>Active Finance employee</li><li>Already has LedgerPro access</li><li>Covers evening shift</li><li>No separation-of-duties conflict</li></ul><button class="ri-primary" type="button" style="width:100%">Test This Recommendation</button><div class="ri-compare"><div class="ri-compare-box"><strong>Original</strong><br><span class="ri-danger">1 blocked</span></div><div class="ri-arrow">→</div><div class="ri-compare-box"><strong>Tested branch</strong><br><span class="ri-safe">0 blocked</span></div></div></article>
+            </aside>
+          </div>
+        </section>
+
+        <section class="ri-page" data-view="history">
+          <div class="ri-page-head"><div><h2>Scenario history</h2><p>Reopen a saved result, duplicate its input, or inspect a tested mitigation branch.</p></div><button class="ri-primary" type="button" data-jump="simulation">+ New Simulation</button></div>
+          <article class="ri-card">
+            <div class="ri-history-tools"><input class="ri-search" aria-label="Search scenarios" placeholder="Search by name, target, or workflow" /><div class="ri-filter-row"><span class="ri-filter-chip ri-selected">All</span><span class="ri-filter-chip">Critical</span><span class="ri-filter-chip">Revoke role</span><span class="ri-filter-chip">This week</span></div></div>
+            <div class="ri-table-scroll"><table class="ri-table ri-history-table"><thead><tr><th>Scenario</th><th>Change</th><th>Target</th><th>Verdict</th><th>Branch</th><th>Run</th><th></th></tr></thead><tbody>
+              <tr><td><strong>Evening approver review</strong><br><span style="color:var(--ri-muted)">Primary portfolio scenario</span></td><td>Revoke role</td><td>Priya Sharma<br>Finance Approver</td><td><span class="ri-pill ri-danger">Critical</span></td><td>Original + 1 tested</td><td>Aug 12, 10:42</td><td class="ri-row-actions" data-jump="results">Open</td></tr>
+              <tr><td><strong>Engineering lead offboard</strong></td><td>Offboard</td><td>Maya Patel</td><td><span class="ri-pill ri-warn">High</span></td><td>Original</td><td>Aug 11, 16:08</td><td class="ri-row-actions">Open</td></tr>
+              <tr><td><strong>Refund permission cleanup</strong></td><td>Remove permission</td><td>Senior Support<br>refund.approve</td><td><span class="ri-pill ri-warn">Medium</span></td><td>Original</td><td>Aug 10, 11:21</td><td class="ri-row-actions">Open</td></tr>
+              <tr><td><strong>Redundant viewer role</strong></td><td>Revoke role</td><td>Luis Kim<br>Report Viewer</td><td><span class="ri-pill ri-safe">Low</span></td><td>Original</td><td>Aug 09, 09:50</td><td class="ri-row-actions">Open</td></tr>
+            </tbody></table></div>
+          </article>
+        </section>
+      </main>
+    </section>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('roleimpact-wireframes-v1');
+      if (!root) return;
+      const valid = new Set(['dashboard','explorer','entity','simulation','results','history']);
+      const show = (name) => {
+        if (!valid.has(name)) name = 'dashboard';
+        root.querySelectorAll('[data-view]').forEach(el => el.classList.toggle('ri-visible', el.dataset.view === name));
+        root.querySelectorAll('[data-screen]').forEach(el => el.setAttribute('aria-pressed', String(el.dataset.screen === name)));
+        root.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ri-active', el.dataset.nav === name || (name === 'entity' && el.dataset.nav === 'explorer') || (name === 'results' && el.dataset.nav === 'history') || (name === 'simulation' && el.dataset.nav === 'history')));
+      };
+      root.addEventListener('click', (event) => {
+        const target = event.target.closest('[data-screen],[data-jump]');
+        if (target) show(target.dataset.screen || target.dataset.jump);
+      });
+      const requested = new URLSearchParams(window.location.search).get('screen') || window.location.hash.slice(1);
+      show(requested || 'dashboard');
+    })();
+  </script>
+</div>
