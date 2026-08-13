@@ -1,5 +1,7 @@
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
 export type WorkflowStatus = 'OPERATIONAL' | 'DEGRADED' | 'BLOCKED'
+export type GraphState = 'UNCHANGED' | 'REMOVED' | 'ADDED' | 'DEGRADED' | 'BLOCKED' | 'RESTORED'
+export type GraphNodeType = 'EMPLOYEE' | 'ROLE' | 'PERMISSION' | 'CAPABILITY' | 'WORKFLOW_STEP' | 'WORKFLOW'
 
 type EntityRef = {
   id: string
@@ -82,6 +84,23 @@ export type Simulation = {
         label: string
       }>
     }>
+    graphDiff: {
+      nodes: Array<{
+        id: string
+        type: GraphNodeType
+        entityId: string
+        label: string
+        state: GraphState
+        detail: string
+      }>
+      edges: Array<{
+        id: string
+        sourceNodeId: string
+        targetNodeId: string
+        relationship: 'ASSIGNED_ROLE' | 'GRANTS_PERMISSION' | 'ENABLES_CAPABILITY' | 'REQUIRED_BY_STEP' | 'PART_OF_WORKFLOW'
+        state: GraphState
+      }>
+    }
     recommendations: Array<{
       id: string
       rank: number

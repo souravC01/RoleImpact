@@ -302,12 +302,17 @@ class CatalogMigrationIntegrationTest {
 				.andExpect(jsonPath("$.result.executiveSummary.permissionsLost").value(2))
 				.andExpect(jsonPath("$.result.executiveSummary.workflowsBlocked").value(1))
 				.andExpect(jsonPath("$.result.executiveSummary.workflowsDegraded").value(1))
+				.andExpect(jsonPath("$.result.graphDiff.nodes").isNotEmpty())
+				.andExpect(jsonPath("$.result.graphDiff.edges").isNotEmpty())
 				.andExpect(jsonPath("$.result.diagnostics.resultHash").isNotEmpty())
 				.andReturn();
 
 		var createdJson = objectMapper.readTree(created.getResponse().getContentAsString());
 		var simulationId = createdJson.path("id").asText();
 		var resultHash = createdJson.path("result").path("diagnostics").path("resultHash").asText();
+		assertThat(createdJson.path("result").path("graphDiff").path("nodes").findValues("state"))
+				.extracting(node -> node.asText())
+				.contains("REMOVED", "DEGRADED", "BLOCKED");
 
 		mockMvc.perform(post("/api/v1/simulations")
 						.header("Idempotency-Key", idempotencyKey)
@@ -365,6 +370,8 @@ class CatalogMigrationIntegrationTest {
 						.value("ledger.close"))
 				.andExpect(jsonPath("$.result.technicalImpact.gainedPermissions[1].action")
 						.value("payment.approve"))
+				.andExpect(jsonPath("$.result.graphDiff.nodes").isNotEmpty())
+				.andExpect(jsonPath("$.result.graphDiff.edges").isNotEmpty())
 				.andExpect(jsonPath("$.result.recommendations").isEmpty())
 				.andReturn();
 
@@ -375,6 +382,12 @@ class CatalogMigrationIntegrationTest {
 		assertThat(branchJson.path("result").path("workflowImpacts").findValues("scenarioStatus"))
 				.extracting(node -> node.asText())
 				.containsOnly("OPERATIONAL");
+		assertThat(branchJson.path("result").path("graphDiff").path("nodes").findValues("state"))
+				.extracting(node -> node.asText())
+				.contains("ADDED", "RESTORED");
+		assertThat(branchJson.path("result").path("graphDiff").path("edges").findValues("state"))
+				.extracting(node -> node.asText())
+				.contains("REMOVED", "ADDED", "RESTORED");
 
 		mockMvc.perform(post("/api/v1/simulations/{simulationId}/branches", parentId)
 						.header("Idempotency-Key", idempotencyKey)

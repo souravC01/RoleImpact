@@ -31,6 +31,10 @@ import com.roleimpact.impactengine.ImpactResult.Diagnostics;
 import com.roleimpact.impactengine.ImpactResult.EntityRef;
 import com.roleimpact.impactengine.ImpactResult.ExecutiveSummary;
 import com.roleimpact.impactengine.ImpactResult.ExplanationPath;
+import com.roleimpact.impactengine.ImpactResult.GraphDiff;
+import com.roleimpact.impactengine.ImpactResult.GraphEdge;
+import com.roleimpact.impactengine.ImpactResult.GraphNode;
+import com.roleimpact.impactengine.ImpactResult.GraphState;
 import com.roleimpact.impactengine.ImpactResult.PathNode;
 import com.roleimpact.impactengine.ImpactResult.PathNodeType;
 import com.roleimpact.impactengine.ImpactResult.PermissionImpact;
@@ -51,9 +55,9 @@ import com.roleimpact.shared.model.WorkflowCriticality;
 public final class DeterministicImpactEngine implements ImpactEngine {
 
 	public static final String REQUEST_SCHEMA_VERSION = "1.0";
-	public static final String RESULT_SCHEMA_VERSION = "1.1";
+	public static final String RESULT_SCHEMA_VERSION = "1.2";
 	public static final String SCHEMA_VERSION = REQUEST_SCHEMA_VERSION;
-	public static final String ENGINE_VERSION = "1.1.0";
+	public static final String ENGINE_VERSION = "1.2.0";
 
 	private static final int MAX_RECOMMENDATIONS = 2;
 	private static final Comparator<UUID> UUID_ORDER = Comparator.comparing(UUID::toString);
@@ -128,17 +132,19 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 					role.name() + " is already assigned to " + replacement.name());
 		}
 
-		var scenarioAssignments = copyAssignments(baselineAssignments);
-		scenarioAssignments.computeIfAbsent(employee.id(), ignored -> new LinkedHashSet<>()).remove(role.id());
+		var revokedAssignments = copyAssignments(baselineAssignments);
+		revokedAssignments.computeIfAbsent(employee.id(), ignored -> new LinkedHashSet<>()).remove(role.id());
+		var scenarioAssignments = copyAssignments(revokedAssignments);
 		if (replacement != null) {
 			scenarioAssignments.computeIfAbsent(replacement.id(), ignored -> new LinkedHashSet<>()).add(role.id());
 		}
 
 		var baselinePermissions = effectivePermissions(baseline, baselineAssignments);
+		var revokedPermissions = effectivePermissions(baseline, revokedAssignments);
 		var scenarioPermissions = effectivePermissions(baseline, scenarioAssignments);
 		var lostPermissionIds = sortedDifference(
 				baselinePermissions.getOrDefault(employee.id(), Set.of()),
-				scenarioPermissions.getOrDefault(employee.id(), Set.of()));
+				revokedPermissions.getOrDefault(employee.id(), Set.of()));
 		var gainedPermissionIds = replacement == null
 				? List.<UUID>of()
 				: sortedDifference(
@@ -147,9 +153,21 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 
 		var technicalImpact = buildTechnicalImpact(
 				baseline, employee, replacement, role.id(), lostPermissionIds, gainedPermissionIds);
+		var revocationImpacts = evaluateWorkflows(baseline, baselinePermissions, revokedPermissions);
 		var workflowImpacts = evaluateWorkflows(baseline, baselinePermissions, scenarioPermissions);
-		var explanationPaths = buildExplanationPaths(
-				baseline, role.id(), employee, role.name(), lostPermissionIds, workflowImpacts);
+		var revocationPaths = buildExplanationPaths(
+				baseline, role.id(), employee, role.name(), lostPermissionIds, revocationImpacts);
+		var explanationPaths = replacement == null
+				? revocationPaths
+				: buildExplanationPaths(
+						baseline, role.id(), employee, role.name(), lostPermissionIds, workflowImpacts);
+		var graphDiff = buildGraphDiff(
+				employee,
+				replacement,
+				new EntityRef(role.id(), role.name()),
+				revocationPaths,
+				revocationImpacts,
+				workflowImpacts);
 		var severity = calculateSeverity(workflowImpacts);
 		var blockedCount = countNewStatus(workflowImpacts, WorkflowStatus.BLOCKED);
 		var degradedCount = countNewStatus(workflowImpacts, WorkflowStatus.DEGRADED);
@@ -187,6 +205,7 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 				technicalImpact,
 				workflowImpacts,
 				explanationPaths,
+				graphDiff,
 				recommendationOutcome.recommendations(),
 				recommendationOutcome.exclusions());
 		var diagnostics = new Diagnostics(ENGINE_VERSION, sha256(canonical));
@@ -202,6 +221,7 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 				technicalImpact,
 				workflowImpacts,
 				explanationPaths,
+				graphDiff,
 				recommendationOutcome.recommendations(),
 				recommendationOutcome.exclusions(),
 				diagnostics);
@@ -560,6 +580,180 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 			}
 		}
 		return List.copyOf(paths);
+	}
+
+	private static GraphDiff buildGraphDiff(
+			EmployeeNode sourceEmployee,
+			EmployeeNode replacementEmployee,
+			EntityRef role,
+			List<ExplanationPath> revocationPaths,
+			List<WorkflowImpact> revocationImpacts,
+			List<WorkflowImpact> finalImpacts) {
+		var nodes = new LinkedHashMap<String, GraphNode>();
+		var edges = new LinkedHashMap<String, GraphEdge>();
+		var revokedByWorkflow = workflowImpactMap(revocationImpacts);
+		var finalByWorkflow = workflowImpactMap(finalImpacts);
+
+		for (var path : revocationPaths) {
+			var revokedWorkflow = revokedByWorkflow.get(path.workflowId());
+			var finalWorkflow = finalByWorkflow.get(path.workflowId());
+			var restored = replacementEmployee != null
+					&& revokedWorkflow != null
+					&& finalWorkflow != null
+					&& revokedWorkflow.scenarioStatus() != revokedWorkflow.baselineStatus()
+					&& finalWorkflow.scenarioStatus() == finalWorkflow.baselineStatus();
+			var outcomeState = restored
+					? GraphState.RESTORED
+					: graphState(finalWorkflow == null ? path.outcome() : finalWorkflow.scenarioStatus());
+
+			for (var pathNode : path.nodes()) {
+				var state = switch (pathNode.type()) {
+					case EMPLOYEE -> GraphState.UNCHANGED;
+					case ROLE, PERMISSION -> restored ? GraphState.RESTORED : GraphState.REMOVED;
+					case CAPABILITY, WORKFLOW_STEP, WORKFLOW -> outcomeState;
+				};
+				putGraphNode(nodes, new GraphNode(
+						nodeId(pathNode.type(), pathNode.id()),
+						pathNode.type(),
+						pathNode.id(),
+						pathNode.label(),
+						state,
+						graphNodeDetail(pathNode, path, finalWorkflow, restored, sourceEmployee, replacementEmployee)));
+			}
+
+			for (var index = 0; index < path.nodes().size() - 1; index++) {
+				var source = path.nodes().get(index);
+				var target = path.nodes().get(index + 1);
+				var relationship = graphRelationship(source.type());
+				var edgeState = index == 0
+						? GraphState.REMOVED
+						: index == 1
+								? (restored ? GraphState.RESTORED : GraphState.REMOVED)
+								: outcomeState;
+				putGraphEdge(edges, graphEdge(source, target, relationship, edgeState));
+			}
+		}
+
+		if (!revocationPaths.isEmpty() && replacementEmployee != null) {
+			var replacementId = nodeId(PathNodeType.EMPLOYEE, replacementEmployee.id());
+			var roleId = nodeId(PathNodeType.ROLE, role.id());
+			putGraphNode(nodes, new GraphNode(
+					replacementId,
+					PathNodeType.EMPLOYEE,
+					replacementEmployee.id(),
+					replacementEmployee.name(),
+					GraphState.ADDED,
+					"Replacement employee selected by the tested mitigation."));
+			var relationship = "ASSIGNED_ROLE";
+			var edgeId = replacementId + "->" + roleId + ":" + relationship;
+			putGraphEdge(edges, new GraphEdge(
+					edgeId,
+					replacementId,
+					roleId,
+					relationship,
+					GraphState.ADDED));
+		}
+
+		return new GraphDiff(List.copyOf(nodes.values()), List.copyOf(edges.values()));
+	}
+
+	private static Map<UUID, WorkflowImpact> workflowImpactMap(List<WorkflowImpact> impacts) {
+		var byId = new LinkedHashMap<UUID, WorkflowImpact>();
+		impacts.forEach(impact -> byId.put(impact.workflowId(), impact));
+		return byId;
+	}
+
+	private static GraphState graphState(WorkflowStatus status) {
+		return switch (status) {
+			case BLOCKED -> GraphState.BLOCKED;
+			case DEGRADED -> GraphState.DEGRADED;
+			case OPERATIONAL -> GraphState.UNCHANGED;
+		};
+	}
+
+	private static String graphNodeDetail(
+			PathNode node,
+			ExplanationPath path,
+			WorkflowImpact finalWorkflow,
+			boolean restored,
+			EmployeeNode sourceEmployee,
+			EmployeeNode replacementEmployee) {
+		return switch (node.type()) {
+			case EMPLOYEE -> "Source employee in the simulated access change.";
+			case ROLE -> replacementEmployee == null
+					? "Assignment removed from " + sourceEmployee.name() + "."
+					: "Removed from " + sourceEmployee.name() + " and assigned to "
+							+ replacementEmployee.name() + ".";
+			case PERMISSION -> restored
+					? "Effective access is restored through the replacement assignment."
+					: "Effective access is lost when the role assignment is removed.";
+			case CAPABILITY -> restored && replacementEmployee != null
+					? "Capability coverage is restored through " + replacementEmployee.name()
+							+ "'s replacement assignment."
+					: path.reason();
+			case WORKFLOW_STEP -> finalWorkflow == null
+					? path.reason()
+					: finalWorkflow.steps().stream()
+							.filter(step -> step.stepId().equals(path.stepId()))
+							.map(StepImpact::consequence)
+							.findFirst()
+							.orElse(path.reason());
+			case WORKFLOW -> finalWorkflow == null
+					? "Workflow becomes " + path.outcome() + "."
+					: "Workflow status: " + finalWorkflow.baselineStatus() + " -> "
+							+ finalWorkflow.scenarioStatus() + (restored ? " (restored)." : ".");
+		};
+	}
+
+	private static String graphRelationship(PathNodeType sourceType) {
+		return switch (sourceType) {
+			case EMPLOYEE -> "ASSIGNED_ROLE";
+			case ROLE -> "GRANTS_PERMISSION";
+			case PERMISSION -> "ENABLES_CAPABILITY";
+			case CAPABILITY -> "REQUIRED_BY_STEP";
+			case WORKFLOW_STEP -> "PART_OF_WORKFLOW";
+			case WORKFLOW -> throw new IllegalArgumentException("Workflow cannot be an edge source");
+		};
+	}
+
+	private static GraphEdge graphEdge(
+			PathNode source,
+			PathNode target,
+			String relationship,
+			GraphState state) {
+		var sourceId = nodeId(source.type(), source.id());
+		var targetId = nodeId(target.type(), target.id());
+		return new GraphEdge(
+				sourceId + "->" + targetId + ":" + relationship,
+				sourceId,
+				targetId,
+				relationship,
+				state);
+	}
+
+	private static String nodeId(PathNodeType type, UUID entityId) {
+		return type.name().toLowerCase(java.util.Locale.ROOT) + ":" + entityId;
+	}
+
+	private static void putGraphNode(Map<String, GraphNode> nodes, GraphNode candidate) {
+		nodes.merge(candidate.id(), candidate, (existing, incoming) ->
+				graphStatePriority(incoming.state()) > graphStatePriority(existing.state()) ? incoming : existing);
+	}
+
+	private static void putGraphEdge(Map<String, GraphEdge> edges, GraphEdge candidate) {
+		edges.merge(candidate.id(), candidate, (existing, incoming) ->
+				graphStatePriority(incoming.state()) > graphStatePriority(existing.state()) ? incoming : existing);
+	}
+
+	private static int graphStatePriority(GraphState state) {
+		return switch (state) {
+			case BLOCKED -> 6;
+			case DEGRADED -> 5;
+			case RESTORED -> 4;
+			case ADDED -> 3;
+			case REMOVED -> 2;
+			case UNCHANGED -> 1;
+		};
 	}
 
 	private static RecommendationOutcome recommendMitigations(
@@ -947,6 +1141,7 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 			TechnicalImpact technicalImpact,
 			List<WorkflowImpact> workflowImpacts,
 			List<ExplanationPath> explanationPaths,
+			GraphDiff graphDiff,
 			List<Recommendation> recommendations,
 			List<CandidateExclusion> exclusions) {
 		var canonical = new StringBuilder();
@@ -970,6 +1165,23 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 			append(canonical, path.workflowId(), path.stepId(), path.outcome(), path.reason());
 			path.nodes().forEach(node -> append(canonical, node.type(), node.id(), node.label()));
 		});
+		graphDiff.nodes().forEach(node -> append(
+				canonical,
+				"graph-node",
+				node.id(),
+				node.type(),
+				node.entityId(),
+				node.label(),
+				node.state(),
+				node.detail()));
+		graphDiff.edges().forEach(edge -> append(
+				canonical,
+				"graph-edge",
+				edge.id(),
+				edge.sourceNodeId(),
+				edge.targetNodeId(),
+				edge.relationship(),
+				edge.state()));
 		recommendations.forEach(recommendation -> {
 			var replacement = recommendation.replacementChange();
 			append(

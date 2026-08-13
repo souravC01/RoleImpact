@@ -1,7 +1,10 @@
+import { lazy, Suspense } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { fetchDashboard } from './api/dashboard'
 import { runMitigationBranch, runPrimarySimulation } from './api/simulations'
 import './App.css'
+
+const ImpactGraph = lazy(() => import('./components/ImpactGraph'))
 
 export default function App() {
   const dashboardQuery = useQuery({
@@ -208,6 +211,13 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            <Suspense fallback={<div className="graph-loading-state">Preparing the impact graph…</div>}>
+              <ImpactGraph
+                original={simulationMutation.data}
+                mitigation={mitigationMutation.data}
+              />
+            </Suspense>
 
             {simulationMutation.data.result.recommendations.length > 0 && (
               <div className="mitigation-panel">

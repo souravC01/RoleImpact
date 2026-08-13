@@ -17,6 +17,7 @@ public record ImpactResult(
 		TechnicalImpact technicalImpact,
 		List<WorkflowImpact> workflowImpacts,
 		List<ExplanationPath> explanationPaths,
+		GraphDiff graphDiff,
 		List<Recommendation> recommendations,
 		List<CandidateExclusion> excludedCandidateReasons,
 		Diagnostics diagnostics) {
@@ -24,8 +25,40 @@ public record ImpactResult(
 	public ImpactResult {
 		workflowImpacts = immutableList(workflowImpacts);
 		explanationPaths = immutableList(explanationPaths);
+		graphDiff = graphDiff == null ? GraphDiff.empty() : graphDiff;
 		recommendations = immutableList(recommendations);
 		excludedCandidateReasons = immutableList(excludedCandidateReasons);
+	}
+
+	public ImpactResult(
+			String schemaVersion,
+			UUID organizationId,
+			int baselineVersion,
+			ResultStatus resultStatus,
+			Severity overallSeverity,
+			ExecutiveSummary executiveSummary,
+			ChangeSet changeSet,
+			TechnicalImpact technicalImpact,
+			List<WorkflowImpact> workflowImpacts,
+			List<ExplanationPath> explanationPaths,
+			List<Recommendation> recommendations,
+			List<CandidateExclusion> excludedCandidateReasons,
+			Diagnostics diagnostics) {
+		this(
+				schemaVersion,
+				organizationId,
+				baselineVersion,
+				resultStatus,
+				overallSeverity,
+				executiveSummary,
+				changeSet,
+				technicalImpact,
+				workflowImpacts,
+				explanationPaths,
+				GraphDiff.empty(),
+				recommendations,
+				excludedCandidateReasons,
+				diagnostics);
 	}
 
 	public ImpactResult(
@@ -51,6 +84,7 @@ public record ImpactResult(
 				technicalImpact,
 				workflowImpacts,
 				explanationPaths,
+				GraphDiff.empty(),
 				List.of(),
 				List.of(),
 				diagnostics);
@@ -88,6 +122,15 @@ public record ImpactResult(
 		CAPABILITY,
 		WORKFLOW_STEP,
 		WORKFLOW
+	}
+
+	public enum GraphState {
+		UNCHANGED,
+		REMOVED,
+		ADDED,
+		DEGRADED,
+		BLOCKED,
+		RESTORED
 	}
 
 	public enum RecommendationAction {
@@ -234,6 +277,35 @@ public record ImpactResult(
 	}
 
 	public record PathNode(PathNodeType type, UUID id, String label) {
+	}
+
+	public record GraphDiff(List<GraphNode> nodes, List<GraphEdge> edges) {
+
+		public GraphDiff {
+			nodes = immutableList(nodes);
+			edges = immutableList(edges);
+		}
+
+		public static GraphDiff empty() {
+			return new GraphDiff(List.of(), List.of());
+		}
+	}
+
+	public record GraphNode(
+			String id,
+			PathNodeType type,
+			UUID entityId,
+			String label,
+			GraphState state,
+			String detail) {
+	}
+
+	public record GraphEdge(
+			String id,
+			String sourceNodeId,
+			String targetNodeId,
+			String relationship,
+			GraphState state) {
 	}
 
 	public record Recommendation(

@@ -18,6 +18,10 @@ and mitigation vertical slice:
 - Ranked, evidence-backed replacement recommendations
 - Persisted parent/child mitigation simulations with idempotent replay
 - Before-and-after workflow comparison in the UI
+- Interactive focused impact graph with removed, blocked, degraded, added, and
+  restored relationship states
+- Selectable graph nodes, original/mitigation toggling, and an accessible text
+  representation of every relationship path
 - Flyway-managed relational schema and Harborline Commerce seed
 - Backend unit and real-PostgreSQL integration tests
 - Frontend unit tests
@@ -58,9 +62,10 @@ npm --prefix frontend install
 npm --prefix frontend run dev
 ```
 
-Open <http://localhost:5173>. Run the Priya Sharma scenario, review Bob Chen's
-recommendation, and test the mitigation to compare the original Critical impact
-with the Low residual access impact after all affected workflows are restored.
+Open <http://localhost:5173>. Run the Priya Sharma scenario, inspect the red and
+amber impact paths, review Bob Chen's recommendation, and test the mitigation to
+see the restored green relationship graph alongside the Low residual access
+impact.
 
 ## API endpoints
 

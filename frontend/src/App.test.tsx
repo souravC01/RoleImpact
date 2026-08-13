@@ -92,6 +92,9 @@ describe('App', () => {
     expect(screen.getAllByText('payment.approve', { selector: 'code' })).not.toHaveLength(0)
     expect(screen.getAllByText('ledger.close', { selector: 'code' })).not.toHaveLength(0)
     expect(screen.getAllByText('Priya Sharma')).not.toHaveLength(0)
+    expect(await screen.findByRole('heading', { name: 'Focused impact graph' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Graph state legend')).toHaveTextContent('Blocked')
+    expect(screen.getByText('Read the relationship path as text')).toBeInTheDocument()
     expect(screen.getByRole('heading', {
       name: 'Restore the workflow without reversing Priya’s change',
     })).toBeInTheDocument()
@@ -108,6 +111,8 @@ describe('App', () => {
     })).toHaveTextContent('Month-End Close')
     expect(screen.getAllByText('OPERATIONAL')).not.toHaveLength(0)
     expect(screen.getByText('Saved as a child simulation')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'With mitigation' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Graph state legend')).toHaveTextContent('Restored')
   })
 })
 
@@ -231,6 +236,95 @@ const simulationFixture = {
         ],
       },
     ],
+    graphDiff: {
+      nodes: [
+        {
+          id: 'employee:priya',
+          type: 'EMPLOYEE',
+          entityId: 'priya',
+          label: 'Priya Sharma',
+          state: 'UNCHANGED',
+          detail: 'Source employee in the simulated access change.',
+        },
+        {
+          id: 'role:finance-approver',
+          type: 'ROLE',
+          entityId: 'finance-approver',
+          label: 'Finance Approver',
+          state: 'REMOVED',
+          detail: 'Assignment removed from Priya Sharma.',
+        },
+        {
+          id: 'permission:payment-approve',
+          type: 'PERMISSION',
+          entityId: 'payment-approve',
+          label: 'payment.approve',
+          state: 'REMOVED',
+          detail: 'Effective access is lost when the role assignment is removed.',
+        },
+        {
+          id: 'capability:approve-payment',
+          type: 'CAPABILITY',
+          entityId: 'approve-payment',
+          label: 'Approve vendor payment',
+          state: 'BLOCKED',
+          detail: 'No eligible evening approver remains.',
+        },
+        {
+          id: 'step:approve-payment',
+          type: 'WORKFLOW_STEP',
+          entityId: 'approve-payment-step',
+          label: 'Approve high-value payment',
+          state: 'BLOCKED',
+          detail: 'The approval step has no eligible actor.',
+        },
+        {
+          id: 'workflow:vendor-payment',
+          type: 'WORKFLOW',
+          entityId: 'vendor-payment',
+          label: 'Vendor Payment',
+          state: 'BLOCKED',
+          detail: 'Workflow status: OPERATIONAL -> BLOCKED.',
+        },
+      ],
+      edges: [
+        {
+          id: 'priya-role',
+          sourceNodeId: 'employee:priya',
+          targetNodeId: 'role:finance-approver',
+          relationship: 'ASSIGNED_ROLE',
+          state: 'REMOVED',
+        },
+        {
+          id: 'role-permission',
+          sourceNodeId: 'role:finance-approver',
+          targetNodeId: 'permission:payment-approve',
+          relationship: 'GRANTS_PERMISSION',
+          state: 'REMOVED',
+        },
+        {
+          id: 'permission-capability',
+          sourceNodeId: 'permission:payment-approve',
+          targetNodeId: 'capability:approve-payment',
+          relationship: 'ENABLES_CAPABILITY',
+          state: 'BLOCKED',
+        },
+        {
+          id: 'capability-step',
+          sourceNodeId: 'capability:approve-payment',
+          targetNodeId: 'step:approve-payment',
+          relationship: 'REQUIRED_BY_STEP',
+          state: 'BLOCKED',
+        },
+        {
+          id: 'step-workflow',
+          sourceNodeId: 'step:approve-payment',
+          targetNodeId: 'workflow:vendor-payment',
+          relationship: 'PART_OF_WORKFLOW',
+          state: 'BLOCKED',
+        },
+      ],
+    },
     recommendations: [
       {
         id: 'c0000000-0000-0000-0000-000000000001',
@@ -312,6 +406,37 @@ const mitigationFixture = {
       failures: [],
     })),
     explanationPaths: [],
+    graphDiff: {
+      nodes: [
+        ...simulationFixture.result.graphDiff.nodes.map((node) => (
+          node.type === 'EMPLOYEE'
+            ? node
+            : { ...node, state: 'RESTORED', detail: `${node.label} is restored by the replacement assignment.` }
+        )),
+        {
+          id: 'employee:bob',
+          type: 'EMPLOYEE',
+          entityId: 'bob',
+          label: 'Bob Chen',
+          state: 'ADDED',
+          detail: 'Replacement employee selected by the tested mitigation.',
+        },
+      ],
+      edges: [
+        simulationFixture.result.graphDiff.edges[0],
+        {
+          id: 'bob-role',
+          sourceNodeId: 'employee:bob',
+          targetNodeId: 'role:finance-approver',
+          relationship: 'ASSIGNED_ROLE',
+          state: 'ADDED',
+        },
+        ...simulationFixture.result.graphDiff.edges.slice(1).map((edge) => ({
+          ...edge,
+          state: 'RESTORED',
+        })),
+      ],
+    },
     recommendations: [],
     excludedCandidateReasons: [],
     diagnostics: {

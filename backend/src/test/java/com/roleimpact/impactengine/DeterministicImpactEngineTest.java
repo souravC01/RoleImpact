@@ -1,6 +1,7 @@
 package com.roleimpact.impactengine;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,6 +25,8 @@ import com.roleimpact.catalog.snapshot.OrganizationSnapshot.WorkflowNode;
 import com.roleimpact.catalog.snapshot.OrganizationSnapshot.WorkflowStepNode;
 import com.roleimpact.impactengine.ImpactResult.CandidateExclusion;
 import com.roleimpact.impactengine.ImpactResult.CandidateExclusionReasonCode;
+import com.roleimpact.impactengine.ImpactResult.GraphState;
+import com.roleimpact.impactengine.ImpactResult.PathNodeType;
 import com.roleimpact.impactengine.ImpactResult.RecommendationAction;
 import com.roleimpact.impactengine.ImpactResult.RecommendationEvidence;
 import com.roleimpact.impactengine.ImpactResult.ResultStatus;
@@ -184,6 +187,52 @@ class DeterministicImpactEngineTest {
 	}
 
 	@Test
+	void projectsAStableFocusedGraphForTheRemovalAndMitigation() {
+		var snapshot = snapshot(false, false);
+		var revokeResult = engine.analyze(snapshot, revokePriyaApprover());
+
+		assertThat(revokeResult.graphDiff().nodes())
+				.extracting(node -> node.id())
+				.doesNotHaveDuplicates();
+		assertThat(revokeResult.graphDiff().edges())
+				.extracting(edge -> edge.id())
+				.doesNotHaveDuplicates();
+		assertThat(revokeResult.graphDiff().nodes())
+				.filteredOn(node -> node.type() == PathNodeType.ROLE)
+				.singleElement()
+				.satisfies(node -> {
+					assertThat(node.label()).isEqualTo("Finance Approver");
+					assertThat(node.state()).isEqualTo(GraphState.REMOVED);
+				});
+		assertThat(revokeResult.graphDiff().nodes())
+				.filteredOn(node -> node.type() == PathNodeType.WORKFLOW)
+				.extracting(node -> node.label(), node -> node.state())
+				.containsExactlyInAnyOrder(
+						tuple("Vendor Payment", GraphState.BLOCKED),
+						tuple("Month-End Close", GraphState.DEGRADED));
+		assertThat(revokeResult.graphDiff().edges())
+				.filteredOn(edge -> edge.relationship().equals("ASSIGNED_ROLE"))
+				.singleElement()
+				.satisfies(edge -> assertThat(edge.state()).isEqualTo(GraphState.REMOVED));
+
+		var branchResult = engine.analyze(
+				snapshot,
+				revokeResult.recommendations().getFirst().replacementChange());
+
+		assertThat(branchResult.graphDiff().nodes())
+				.filteredOn(node -> node.type() == PathNodeType.EMPLOYEE && node.entityId().equals(BOB_ID))
+				.singleElement()
+				.satisfies(node -> assertThat(node.state()).isEqualTo(GraphState.ADDED));
+		assertThat(branchResult.graphDiff().nodes())
+				.filteredOn(node -> node.type() == PathNodeType.WORKFLOW)
+				.allSatisfy(node -> assertThat(node.state()).isEqualTo(GraphState.RESTORED));
+		assertThat(branchResult.graphDiff().edges())
+				.filteredOn(edge -> edge.relationship().equals("ASSIGNED_ROLE"))
+				.extracting(edge -> edge.state())
+				.containsExactlyInAnyOrder(GraphState.REMOVED, GraphState.ADDED);
+	}
+
+	@Test
 	void normalizesCollectionsAbsentFromOlderPersistedResults() {
 		var technicalImpact = new TechnicalImpact(null, null, null, null, null, null, null);
 		var result = new ImpactResult(
@@ -203,6 +252,8 @@ class DeterministicImpactEngineTest {
 
 		assertThat(result.workflowImpacts()).isEmpty();
 		assertThat(result.explanationPaths()).isEmpty();
+		assertThat(result.graphDiff().nodes()).isEmpty();
+		assertThat(result.graphDiff().edges()).isEmpty();
 		assertThat(result.recommendations()).isEmpty();
 		assertThat(result.excludedCandidateReasons()).isEmpty();
 		assertThat(result.technicalImpact().assignedRoles()).isEmpty();
