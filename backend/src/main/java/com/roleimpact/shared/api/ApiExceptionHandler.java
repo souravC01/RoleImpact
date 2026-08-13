@@ -10,6 +10,9 @@ import com.roleimpact.simulation.application.RecommendationNotFoundException;
 import com.roleimpact.simulation.application.SimulationConflictException;
 import com.roleimpact.simulation.application.SimulationNotFoundException;
 import com.roleimpact.simulation.application.SimulationValidationException;
+import com.roleimpact.workspace.application.WorkspaceConflictException;
+import com.roleimpact.workspace.application.WorkspaceNotFoundException;
+import com.roleimpact.workspace.application.WorkspaceValidationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +25,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ApiExceptionHandler {
 
 	@ExceptionHandler({OrganizationNotFoundException.class, ImpactEntityNotFoundException.class,
-			RecommendationNotFoundException.class, SimulationNotFoundException.class})
+			RecommendationNotFoundException.class, SimulationNotFoundException.class,
+			WorkspaceNotFoundException.class})
 	ResponseEntity<ErrorEnvelope> handleNotFound(RuntimeException exception) {
 		return error(HttpStatus.NOT_FOUND, "ENTITY_NOT_FOUND", exception.getMessage(), List.of());
 	}
@@ -35,6 +39,16 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(SimulationConflictException.class)
 	ResponseEntity<ErrorEnvelope> handleConflict(SimulationConflictException exception) {
 		return error(HttpStatus.CONFLICT, "SIMULATION_CONFLICT", exception.getMessage(), List.of());
+	}
+
+	@ExceptionHandler(WorkspaceValidationException.class)
+	ResponseEntity<ErrorEnvelope> handleWorkspaceValidation(WorkspaceValidationException exception) {
+		return error(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_WORKSPACE", exception.getMessage(), List.of());
+	}
+
+	@ExceptionHandler(WorkspaceConflictException.class)
+	ResponseEntity<ErrorEnvelope> handleWorkspaceConflict(WorkspaceConflictException exception) {
+		return error(HttpStatus.CONFLICT, "WORKSPACE_CONFLICT", exception.getMessage(), List.of());
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

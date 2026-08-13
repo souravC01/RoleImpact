@@ -1,12 +1,36 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { fetchDashboard } from './api/dashboard'
 import { runMitigationBranch, runPrimarySimulation } from './api/simulations'
+import type { Workspace } from './api/workspaces'
+import WorkspaceWelcome from './components/workspaces/WorkspaceWelcome'
+import DraftWorkspace from './components/workspaces/DraftWorkspace'
 import './App.css'
 
 const ImpactGraph = lazy(() => import('./components/ImpactGraph'))
 
+type AppView = { page: 'home' } | { page: 'example' } | { page: 'draft'; workspace: Workspace }
+
 export default function App() {
+  const [view, setView] = useState<AppView>({ page: 'home' })
+
+  if (view.page === 'home') {
+    return (
+      <WorkspaceWelcome
+        onExploreTemplate={() => setView({ page: 'example' })}
+        onOpenDraft={(workspace) => setView({ page: 'draft', workspace })}
+      />
+    )
+  }
+
+  if (view.page === 'draft') {
+    return <DraftWorkspace workspace={view.workspace} onBack={() => setView({ page: 'home' })} />
+  }
+
+  return <HarborlineDashboard onBack={() => setView({ page: 'home' })} />
+}
+
+function HarborlineDashboard({ onBack }: { onBack: () => void }) {
   const dashboardQuery = useQuery({
     queryKey: ['dashboard', 'harborline-commerce'],
     queryFn: ({ signal }) => fetchDashboard(signal),
@@ -55,10 +79,10 @@ export default function App() {
   return (
     <div className="dashboard-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="RoleImpact home">
+        <button className="brand brand-button" type="button" onClick={onBack} aria-label="Back to workspaces">
           <span className="brand-mark" aria-hidden="true">R</span>
           <span>RoleImpact</span>
-        </a>
+        </button>
         <div className="baseline-chip">
           <span className="connection-dot" aria-hidden="true" />
           {dashboard.organization.name} · Dataset v{dashboard.organization.baselineVersion}

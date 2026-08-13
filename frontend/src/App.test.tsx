@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 afterEach(() => {
+  cleanup()
   vi.restoreAllMocks()
 })
 
@@ -22,9 +23,12 @@ function renderApp() {
 
 describe('App', () => {
   it('renders the seeded organization dashboard', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces')) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/api/v1/dashboard')) {
+        return jsonResponse({
           organization: {
             id: '00000000-0000-0000-0000-000000000001',
             slug: 'harborline-commerce',
@@ -51,13 +55,15 @@ describe('App', () => {
               ownerName: 'Olivia Park',
             },
           ],
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
-    )
+        })
+      }
+      return new Response(null, { status: 404 })
+    })
 
     renderApp()
 
+    expect(await screen.findByRole('heading', { name: 'Explore Harborline' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Explore the example' }))
     expect(await screen.findByText(/Harborline Commerce/)).toBeInTheDocument()
     expect(screen.getByText('24')).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Month-End Close' })).not.toHaveLength(0)
@@ -68,6 +74,9 @@ describe('App', () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces')) {
+        return jsonResponse(workspaceFixture)
+      }
       if (url.endsWith('/api/v1/dashboard')) {
         return jsonResponse(dashboardFixture)
       }
@@ -82,6 +91,7 @@ describe('App', () => {
 
     renderApp()
 
+    await user.click(await screen.findByRole('button', { name: 'Explore the example' }))
     await user.click(await screen.findByRole('button', { name: 'Run impact analysis' }))
 
     expect(await screen.findByRole('heading', { name: 'Critical business impact' })).toBeInTheDocument()
@@ -114,6 +124,25 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'With mitigation' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Graph state legend')).toHaveTextContent('Restored')
   })
+
+  it('clones the example into an isolated editable draft', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+
+    expect(await screen.findByRole('heading', { name: 'Harborline Sandbox' })).toBeInTheDocument()
+    expect(screen.getByText('Draft · not yet published')).toBeInTheDocument()
+    expect(screen.getByText(/fresh identity/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Draft catalog summary')).toHaveTextContent('25')
+  })
 })
 
 function jsonResponse(value: unknown, status = 200) {
@@ -121,6 +150,30 @@ function jsonResponse(value: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+const workspaceFixture = [
+  {
+    id: '00000000-0000-0000-0000-000000000001',
+    slug: 'harborline-commerce',
+    name: 'Harborline Commerce',
+    status: 'PUBLISHED',
+    currentVersion: 1,
+    sourceTemplateOrganizationId: null,
+    createdAt: '2026-08-12T20:00:00Z',
+    updatedAt: '2026-08-12T20:00:00Z',
+    counts: { teams: 5, members: 25, roles: 8, permissions: 23, capabilities: 10, workflows: 4 },
+  },
+]
+
+const clonedWorkspaceFixture = {
+  ...workspaceFixture[0],
+  id: '90000000-0000-0000-0000-000000000001',
+  slug: 'harborline-sandbox',
+  name: 'Harborline Sandbox',
+  status: 'DRAFT',
+  currentVersion: 0,
+  sourceTemplateOrganizationId: workspaceFixture[0].id,
 }
 
 const dashboardFixture = {

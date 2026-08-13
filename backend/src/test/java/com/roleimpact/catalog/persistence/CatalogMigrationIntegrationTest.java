@@ -95,7 +95,7 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(3);
+		assertThat(successfulMigrations).isEqualTo(4);
 	}
 
 	@Test
