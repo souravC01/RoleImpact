@@ -18,6 +18,7 @@ import com.roleimpact.catalog.persistence.CatalogEdgeRepository;
 import com.roleimpact.catalog.persistence.CatalogEdgeRepository.IdEdge;
 import com.roleimpact.catalog.persistence.EmployeeEntity;
 import com.roleimpact.catalog.persistence.EmployeeRepository;
+import com.roleimpact.catalog.persistence.OrganizationEntity;
 import com.roleimpact.catalog.persistence.OrganizationRepository;
 import com.roleimpact.catalog.persistence.PermissionEntity;
 import com.roleimpact.catalog.persistence.PermissionRepository;
@@ -96,6 +97,17 @@ public class OrganizationSnapshotAssembler {
 	public OrganizationSnapshot assemble(String organizationSlug) {
 		var organization = organizationRepository.findBySlug(organizationSlug)
 				.orElseThrow(() -> new OrganizationNotFoundException(organizationSlug));
+		return assemble(organization);
+	}
+
+	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+	public OrganizationSnapshot assemble(UUID organizationId) {
+		var organization = organizationRepository.findById(organizationId)
+				.orElseThrow(() -> new OrganizationNotFoundException(organizationId.toString()));
+		return assemble(organization);
+	}
+
+	private OrganizationSnapshot assemble(OrganizationEntity organization) {
 		var organizationId = organization.getId();
 
 		var teamEntities = teamRepository.findAllByOrganizationIdOrderByName(organizationId);

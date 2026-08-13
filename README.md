@@ -6,14 +6,18 @@ before they offboard an employee, revoke a role, or remove a permission.
 
 ## Current milestone
 
-The repository currently contains the local development foundation and its
-first read-only vertical slice:
+The repository contains the local foundation and its first complete simulation
+and mitigation vertical slice:
 
 - React and TypeScript frontend
 - Spring Boot and Java 21 API
 - PostgreSQL 17 through Docker Compose
 - Versioned, immutable `OrganizationSnapshot` assembly
-- Read-only organization dashboard API and UI
+- Organization dashboard API and UI
+- Deterministic revoke-role impact analysis with stable result hashing
+- Ranked, evidence-backed replacement recommendations
+- Persisted parent/child mitigation simulations with idempotent replay
+- Before-and-after workflow comparison in the UI
 - Flyway-managed relational schema and Harborline Commerce seed
 - Backend unit and real-PostgreSQL integration tests
 - Frontend unit tests
@@ -54,15 +58,19 @@ npm --prefix frontend install
 npm --prefix frontend run dev
 ```
 
-Open <http://localhost:5173>. The dashboard loads the Harborline Commerce
-baseline from <http://localhost:8080/api/v1/dashboard>. The lower-level health
-check remains available at <http://localhost:8080/api/v1/health>.
+Open <http://localhost:5173>. Run the Priya Sharma scenario, review Bob Chen's
+recommendation, and test the mitigation to compare the original Critical impact
+with the Low residual access impact after all affected workflows are restored.
 
 ## API endpoints
 
 - `GET /api/v1/dashboard` loads the default Harborline Commerce dashboard.
 - `GET /api/v1/dashboard?organization={slug}` loads another organization or
   returns `404` when the slug does not exist.
+- `POST /api/v1/simulations` runs and saves a revoke-role simulation.
+- `GET /api/v1/simulations/{simulationId}` retrieves an immutable saved result.
+- `POST /api/v1/simulations/{simulationId}/branches` tests and saves a
+  recommendation as a child mitigation simulation.
 - `GET /api/v1/health` reports API availability.
 
 ## Tests
@@ -70,6 +78,7 @@ check remains available at <http://localhost:8080/api/v1/health>.
 ```powershell
 .\backend\mvnw.cmd test
 npm --prefix frontend test
+npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 

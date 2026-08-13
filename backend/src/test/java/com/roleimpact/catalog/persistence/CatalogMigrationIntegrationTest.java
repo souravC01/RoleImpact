@@ -3,19 +3,27 @@ package com.roleimpact.catalog.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.roleimpact.catalog.snapshot.OrganizationSnapshotAssembler;
+import com.roleimpact.impactengine.ImpactEngine;
+import com.roleimpact.impactengine.ImpactResult.PathNodeType;
+import com.roleimpact.impactengine.ImpactResult.Severity;
+import com.roleimpact.impactengine.ImpactResult.WorkflowStatus;
+import com.roleimpact.impactengine.RevokeEmployeeRole;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -28,6 +36,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class CatalogMigrationIntegrationTest {
 
 	private static final UUID HARBORLINE_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+	private static final UUID PRIYA_ID = UUID.fromString("20000000-0000-0000-0000-000000000001");
+	private static final UUID BOB_ID = UUID.fromString("20000000-0000-0000-0000-000000000002");
+	private static final UUID FINANCE_APPROVER_ID = UUID.fromString("30000000-0000-0000-0000-000000000002");
 
 	@Container
 	@ServiceConnection
@@ -57,6 +68,12 @@ class CatalogMigrationIntegrationTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private ImpactEngine impactEngine;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	@Test
 	void appliesSchemaAndLoadsTheCompleteHarborlineBaseline() {
 		assertThat(count("organizations")).isEqualTo(1);
@@ -78,7 +95,7 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(2);
+		assertThat(successfulMigrations).isEqualTo(3);
 	}
 
 	@Test
@@ -228,6 +245,233 @@ class CatalogMigrationIntegrationTest {
 	void returnsNotFoundForAnUnknownDashboardOrganization() throws Exception {
 		mockMvc.perform(get("/api/v1/dashboard").param("organization", "missing-company"))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void deterministicallyExplainsThePrimaryPriyaScenarioWithoutMutatingTheBaseline() {
+		var snapshot = snapshotAssembler.assemble(HARBORLINE_ID);
+		var change = new RevokeEmployeeRole(PRIYA_ID, FINANCE_APPROVER_ID);
+
+		var firstResult = impactEngine.analyze(snapshot, change);
+		var secondResult = impactEngine.analyze(snapshot, change);
+
+		assertThat(firstResult).isEqualTo(secondResult);
+		assertThat(firstResult.diagnostics().resultHash()).hasSize(64);
+		assertThat(firstResult.overallSeverity()).isEqualTo(Severity.CRITICAL);
+		assertThat(firstResult.executiveSummary().rolesRemoved()).isEqualTo(1);
+		assertThat(firstResult.executiveSummary().permissionsLost()).isEqualTo(2);
+		assertThat(firstResult.executiveSummary().workflowsBlocked()).isEqualTo(1);
+		assertThat(firstResult.executiveSummary().workflowsDegraded()).isEqualTo(1);
+		assertThat(firstResult.technicalImpact().lostPermissions())
+				.extracting(permission -> permission.action())
+				.containsExactly("ledger.close", "payment.approve");
+
+		var vendorPayment = firstResult.workflowImpacts().stream()
+				.filter(workflow -> workflow.workflowName().equals("Vendor Payment"))
+				.findFirst()
+				.orElseThrow();
+		var monthEndClose = firstResult.workflowImpacts().stream()
+				.filter(workflow -> workflow.workflowName().equals("Month-End Close"))
+				.findFirst()
+				.orElseThrow();
+
+		assertThat(vendorPayment.baselineStatus()).isEqualTo(WorkflowStatus.OPERATIONAL);
+		assertThat(vendorPayment.scenarioStatus()).isEqualTo(WorkflowStatus.BLOCKED);
+		assertThat(monthEndClose.baselineStatus()).isEqualTo(WorkflowStatus.OPERATIONAL);
+		assertThat(monthEndClose.scenarioStatus()).isEqualTo(WorkflowStatus.DEGRADED);
+		assertThat(firstResult.explanationPaths()).hasSize(2)
+				.allSatisfy(path -> {
+					assertThat(path.nodes().getFirst().type()).isEqualTo(PathNodeType.EMPLOYEE);
+					assertThat(path.nodes().getLast().type()).isEqualTo(PathNodeType.WORKFLOW);
+				});
+		assertThat(snapshot.roleIdsByEmployeeId().get(PRIYA_ID)).contains(FINANCE_APPROVER_ID);
+	}
+
+	@Test
+	void savesReplaysAndRetrievesThePriyaSimulationThroughTheApi() throws Exception {
+		var request = priyaSimulationRequest(1, PRIYA_ID);
+		var idempotencyKey = "test-priya-golden-scenario";
+
+		var created = mockMvc.perform(post("/api/v1/simulations")
+						.header("Idempotency-Key", idempotencyKey)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.result.overallSeverity").value("CRITICAL"))
+				.andExpect(jsonPath("$.result.executiveSummary.rolesRemoved").value(1))
+				.andExpect(jsonPath("$.result.executiveSummary.permissionsLost").value(2))
+				.andExpect(jsonPath("$.result.executiveSummary.workflowsBlocked").value(1))
+				.andExpect(jsonPath("$.result.executiveSummary.workflowsDegraded").value(1))
+				.andExpect(jsonPath("$.result.diagnostics.resultHash").isNotEmpty())
+				.andReturn();
+
+		var createdJson = objectMapper.readTree(created.getResponse().getContentAsString());
+		var simulationId = createdJson.path("id").asText();
+		var resultHash = createdJson.path("result").path("diagnostics").path("resultHash").asText();
+
+		mockMvc.perform(post("/api/v1/simulations")
+						.header("Idempotency-Key", idempotencyKey)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(simulationId))
+				.andExpect(jsonPath("$.result.diagnostics.resultHash").value(resultHash));
+
+		mockMvc.perform(get("/api/v1/simulations/{simulationId}", simulationId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.result.overallSeverity").value("CRITICAL"))
+				.andExpect(jsonPath("$.result.diagnostics.resultHash").value(resultHash));
+
+		var savedRows = jdbcClient.sql("SELECT COUNT(*) FROM simulations WHERE idempotency_key = :key")
+				.param("key", idempotencyKey)
+				.query(Integer.class)
+				.single();
+		assertThat(savedRows).isEqualTo(1);
+	}
+
+	@Test
+	void createsPersistsReplaysAndRetrievesARecommendedMitigationBranch() throws Exception {
+		var parentResponse = mockMvc.perform(post("/api/v1/simulations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(priyaSimulationRequest(1, PRIYA_ID)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.parentSimulationId").doesNotExist())
+				.andExpect(jsonPath("$.result.recommendations[0].rank").value(1))
+				.andExpect(jsonPath("$.result.recommendations[0].candidate.id").value(BOB_ID.toString()))
+				.andExpect(jsonPath("$.result.recommendations[0].action").value("ASSIGN_ROLE_TO_EMPLOYEE"))
+				.andReturn();
+
+		var parentJson = objectMapper.readTree(parentResponse.getResponse().getContentAsString());
+		var parentId = parentJson.path("id").asText();
+		var recommendationId = parentJson.path("result").path("recommendations").get(0).path("id").asText();
+		var branchRequest = branchRequest(recommendationId);
+		var idempotencyKey = "test-priya-bob-mitigation-branch";
+
+		var branchResponse = mockMvc.perform(post("/api/v1/simulations/{simulationId}/branches", parentId)
+						.header("Idempotency-Key", idempotencyKey)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(branchRequest))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.parentSimulationId").value(parentId))
+				.andExpect(jsonPath("$.result.overallSeverity").value("LOW"))
+				.andExpect(jsonPath("$.result.changeSet.type")
+						.value("REVOKE_EMPLOYEE_ROLE_AND_ASSIGN_REPLACEMENT"))
+				.andExpect(jsonPath("$.result.changeSet.replacementEmployee.id").value(BOB_ID.toString()))
+				.andExpect(jsonPath("$.result.executiveSummary.workflowsBlocked").value(0))
+				.andExpect(jsonPath("$.result.executiveSummary.workflowsDegraded").value(0))
+				.andExpect(jsonPath("$.result.technicalImpact.assignedRoles[0].id")
+						.value(FINANCE_APPROVER_ID.toString()))
+				.andExpect(jsonPath("$.result.technicalImpact.gainedPermissions[0].action")
+						.value("ledger.close"))
+				.andExpect(jsonPath("$.result.technicalImpact.gainedPermissions[1].action")
+						.value("payment.approve"))
+				.andExpect(jsonPath("$.result.recommendations").isEmpty())
+				.andReturn();
+
+		var branchJson = objectMapper.readTree(branchResponse.getResponse().getContentAsString());
+		var branchId = branchJson.path("id").asText();
+		var resultHash = branchJson.path("result").path("diagnostics").path("resultHash").asText();
+
+		assertThat(branchJson.path("result").path("workflowImpacts").findValues("scenarioStatus"))
+				.extracting(node -> node.asText())
+				.containsOnly("OPERATIONAL");
+
+		mockMvc.perform(post("/api/v1/simulations/{simulationId}/branches", parentId)
+						.header("Idempotency-Key", idempotencyKey)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(branchRequest))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(branchId))
+				.andExpect(jsonPath("$.result.diagnostics.resultHash").value(resultHash));
+
+		mockMvc.perform(get("/api/v1/simulations/{simulationId}", branchId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.parentSimulationId").value(parentId))
+				.andExpect(jsonPath("$.result.overallSeverity").value("LOW"))
+				.andExpect(jsonPath("$.result.diagnostics.resultHash").value(resultHash));
+
+		var persistedBranch = jdbcClient.sql("""
+				SELECT parent_simulation_id::text || '|' || change_type
+				FROM simulations
+				WHERE id = :branchId
+				""")
+				.param("branchId", UUID.fromString(branchId))
+				.query(String.class)
+				.single();
+		assertThat(persistedBranch).isEqualTo(
+				parentId + "|REVOKE_EMPLOYEE_ROLE_AND_ASSIGN_REPLACEMENT");
+
+		var savedRows = jdbcClient.sql("SELECT COUNT(*) FROM simulations WHERE idempotency_key = :key")
+				.param("key", idempotencyKey)
+				.query(Integer.class)
+				.single();
+		assertThat(savedRows).isEqualTo(1);
+	}
+
+	@Test
+	void rejectsMissingParentsAndUnknownRecommendationsForMitigationBranches() throws Exception {
+		var unknownRecommendation = branchRequest(UUID.randomUUID().toString());
+
+		mockMvc.perform(post("/api/v1/simulations/{simulationId}/branches", UUID.randomUUID())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(unknownRecommendation))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ENTITY_NOT_FOUND"));
+
+		var parentResponse = mockMvc.perform(post("/api/v1/simulations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(priyaSimulationRequest(1, PRIYA_ID)))
+				.andExpect(status().isCreated())
+				.andReturn();
+		var parentId = objectMapper.readTree(parentResponse.getResponse().getContentAsString())
+				.path("id").asText();
+
+		mockMvc.perform(post("/api/v1/simulations/{simulationId}/branches", parentId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(unknownRecommendation))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ENTITY_NOT_FOUND"));
+	}
+
+	@Test
+	void rejectsInvalidAndStaleSimulationRequestsWithStableErrorCodes() throws Exception {
+		mockMvc.perform(post("/api/v1/simulations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(priyaSimulationRequest(1, BOB_ID)))
+				.andExpect(status().isUnprocessableEntity())
+				.andExpect(jsonPath("$.code").value("INVALID_SIMULATION"));
+
+		mockMvc.perform(post("/api/v1/simulations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(priyaSimulationRequest(99, PRIYA_ID)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("SIMULATION_CONFLICT"));
+	}
+
+	private String priyaSimulationRequest(int baselineVersion, UUID employeeId) throws Exception {
+		return objectMapper.writeValueAsString(new SimulationApiRequest(
+				"1.0",
+				HARBORLINE_ID,
+				baselineVersion,
+				new SimulationChangeRequest("REVOKE_EMPLOYEE_ROLE", employeeId, FINANCE_APPROVER_ID)));
+	}
+
+	private String branchRequest(String recommendationId) throws Exception {
+		return objectMapper.writeValueAsString(new SimulationBranchApiRequest(
+				UUID.fromString(recommendationId)));
+	}
+
+	private record SimulationApiRequest(
+			String schemaVersion,
+			UUID organizationId,
+			int baselineVersion,
+			SimulationChangeRequest change) {
+	}
+
+	private record SimulationChangeRequest(String type, UUID employeeId, UUID roleId) {
+	}
+
+	private record SimulationBranchApiRequest(UUID recommendationId) {
 	}
 
 	private int count(String table) {
