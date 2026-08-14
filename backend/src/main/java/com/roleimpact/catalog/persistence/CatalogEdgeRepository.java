@@ -1,5 +1,9 @@
 package com.roleimpact.catalog.persistence;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,7 +61,7 @@ public class CatalogEdgeRepository {
 	}
 
 	public String findContentHash(UUID organizationId, int version) {
-		return jdbcClient.sql("""
+		var savedHash = jdbcClient.sql("""
 				SELECT content_hash
 				FROM organization_versions
 				WHERE organization_id = :organizationId AND version = :version
@@ -65,7 +69,27 @@ public class CatalogEdgeRepository {
 				.param("organizationId", organizationId)
 				.param("version", version)
 				.query(String.class)
-				.single();
+				.optional();
+		if (savedHash.isPresent()) return savedHash.get();
+		if (version != 0) {
+			throw new IllegalStateException("Organization version " + version + " has no content hash");
+		}
+		String draftFingerprint = jdbcClient.sql("""
+				SELECT id::text || '|' || updated_at::text
+				FROM organizations
+				WHERE id = :organizationId AND workspace_status = 'DRAFT'
+				""").param("organizationId", organizationId).query(String.class).single();
+		return sha256(draftFingerprint);
+	}
+
+	private String sha256(String value) {
+		try {
+			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+					.digest(value.getBytes(StandardCharsets.UTF_8)));
+		}
+		catch (NoSuchAlgorithmException exception) {
+			throw new IllegalStateException("SHA-256 is unavailable", exception);
+		}
 	}
 
 	private List<IdEdge> queryEdges(String sql, UUID organizationId) {

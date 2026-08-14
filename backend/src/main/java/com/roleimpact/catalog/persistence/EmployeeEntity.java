@@ -26,13 +26,13 @@ public class EmployeeEntity {
 	@Column(name = "team_id", nullable = false)
 	private UUID teamId;
 
-	@Column(name = "employee_no", nullable = false, unique = true, length = 40)
+	@Column(name = "employee_no", unique = true, length = 40)
 	private String employeeNumber;
 
 	@Column(nullable = false, length = 160)
 	private String name;
 
-	@Column(nullable = false, unique = true, length = 254)
+	@Column(unique = true, length = 254)
 	private String email;
 
 	@Enumerated(EnumType.STRING)

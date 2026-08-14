@@ -1,4 +1,5 @@
 import type { Workspace } from '../../api/workspaces'
+import DraftEditor from './editor/DraftEditor'
 
 type DraftWorkspaceProps = {
   workspace: Workspace
@@ -24,23 +25,7 @@ export default function DraftWorkspace({ workspace, onBack }: DraftWorkspaceProp
             ? 'Your organization is ready. Add its first team and build outward from there.'
             : 'Your Harborline copy is ready. Every record has a fresh identity, so changes here cannot affect the example.'}
         </p>
-        <div className="draft-summary" aria-label="Draft catalog summary">
-          {Object.entries(workspace.counts).map(([label, value]) => (
-            <article key={label}>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </article>
-          ))}
-        </div>
-        <section className="builder-next-card">
-          <span className="choice-number">Next</span>
-          <div>
-            <p className="section-kicker">Builder foundation ready</p>
-            <h2>{isEmpty ? 'Add your first team' : 'Review teams and members'}</h2>
-            <p>The next implementation slice adds the guided Team → Member → Role editor on top of this draft.</p>
-          </div>
-          <button type="button" disabled>{isEmpty ? 'Add team' : 'Open team editor'}</button>
-        </section>
+        <DraftEditor workspaceId={workspace.id} isTemplateClone={Boolean(workspace.sourceTemplateOrganizationId)} />
         <button className="text-button" type="button" onClick={onBack}>← Back to workspace choices</button>
       </main>
     </div>
