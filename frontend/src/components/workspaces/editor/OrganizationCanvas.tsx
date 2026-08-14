@@ -60,6 +60,7 @@ export default function OrganizationCanvas(props: {
   catalog: DraftCatalog
   initialFocus: boolean
   onOpenInventory: () => void
+  onOpenWorkflows: () => void
   onTestImpact: () => void
 }) {
   return (
@@ -69,11 +70,12 @@ export default function OrganizationCanvas(props: {
   )
 }
 
-function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInventory, onTestImpact }: {
+function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInventory, onOpenWorkflows, onTestImpact }: {
   workspaceId: string
   catalog: DraftCatalog
   initialFocus: boolean
   onOpenInventory: () => void
+  onOpenWorkflows: () => void
   onTestImpact: () => void
 }) {
   const queryClient = useQueryClient()
@@ -195,15 +197,15 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
               <button
                 key={entityType}
                 type="button"
-                draggable={!blocked}
+                draggable={!blocked && entityType !== 'workflow'}
                 disabled={blocked}
                 className={`palette-object ${entityType}`}
-                aria-label={`Add ${typeLabels[entityType]}`}
+                aria-label={entityType === 'workflow' ? 'Build Workflow' : `Add ${typeLabels[entityType]}`}
                 onDragStart={(event) => {
                   event.dataTransfer.setData('application/roleimpact-node', entityType)
                   event.dataTransfer.effectAllowed = 'copy'
                 }}
-                onClick={() => beginCreate(entityType)}
+                onClick={() => entityType === 'workflow' ? onOpenWorkflows() : beginCreate(entityType)}
               >
                 <span aria-hidden="true">{entityIcon(entityType)}</span>
                 <strong>{typeLabels[entityType]}</strong>
@@ -241,6 +243,7 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
             nodesDraggable={scope === 'full'}
             onNodeDragStop={(_, node) => { if (scope === 'full') savePosition(node) }}
             onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+            onPaneClick={() => setSelectedNodeId(null)}
             onConnect={(connection) => connectionMutation.mutate(connection)}
             isValidConnection={(connection) => isValidConnection(connection, catalog)}
             fitView
@@ -291,6 +294,7 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
             <p>{selectedNode.data.detail}</p>
             <div className="inventory-selection-actions">
               {(selectedNode.data.entityType === 'member' || selectedNode.data.entityType === 'role') ? <button type="button" className="edit-text" onClick={onTestImpact}>Test impact</button> : null}
+              {selectedNode.data.entityType === 'workflow' ? <button type="button" className="edit-text" onClick={onOpenWorkflows}>Edit workflow</button> : null}
               {selectedNode.data.entityType !== 'responsibility' ? <button type="button" className="danger-text" onClick={() => { deleteMutation.reset(); setPendingDelete(selectedNode) }}>Delete object</button> : null}
             </div>
           </div>
@@ -310,7 +314,7 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
               localStorage.setItem(positionKey(workspaceId), JSON.stringify(positions))
             }
             queryClient.setQueryData(['draft-catalog', workspaceId], nextCatalog)
-            setSelectedNodeId(createdId)
+            setSelectedNodeId(null)
             setPendingCreate(null)
             setNotice(successMessage ?? `${typeLabels[pendingCreate.entityType]} created`)
           }}

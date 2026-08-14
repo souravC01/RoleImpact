@@ -60,6 +60,12 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
     window.requestAnimationFrame(() => editorRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }))
   }
 
+  function openInventory(nextStage?: EditorStage) {
+    if (nextStage) setStage(nextStage)
+    setView('inventory')
+    window.requestAnimationFrame(() => editorRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }))
+  }
+
   return (
     <section ref={editorRef} className="draft-editor" aria-labelledby="editor-title">
       <div className="editor-heading">
@@ -89,7 +95,7 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
       ) : null}
 
       {view === 'map' ? (
-        <Suspense fallback={<p className="editor-state">Opening the organization map…</p>}><OrganizationCanvas workspaceId={workspaceId} catalog={catalog} initialFocus={isTemplateClone} onOpenInventory={() => setView('inventory')} onTestImpact={() => setView('impact')} /></Suspense>
+        <Suspense fallback={<p className="editor-state">Opening the organization map…</p>}><OrganizationCanvas workspaceId={workspaceId} catalog={catalog} initialFocus={isTemplateClone} onOpenInventory={() => openInventory()} onOpenWorkflows={() => openInventory('workflows')} onTestImpact={() => setView('impact')} /></Suspense>
       ) : view === 'impact' ? (
         <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} onBackToMap={() => setView('map')} /></Suspense>
       ) : (

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { runDraftImpactPreview, type DraftImpactResult } from '../../../api/draftImpact'
 import type { DraftCatalog } from '../../../api/draftCatalog'
@@ -30,6 +30,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
   })
 
   function chooseWorkflow(workflowId: string) {
+    if (workflowId === selectedWorkflowId) return
     const firstRisk = testableRisks.find((risk) => risk.workflowId === workflowId)
     setSelectedWorkflowId(workflowId)
     setSelectedRiskKey(firstRisk?.key ?? '')
@@ -39,6 +40,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
   }
 
   function chooseRisk(riskKey: string) {
+    if (riskKey === selectedRiskKey) return
     const risk = workflowRisks.find((candidate) => candidate.key === riskKey)
     setSelectedRiskKey(riskKey)
     setSelectedMemberId(risk?.members[0]?.id ?? '')
@@ -47,6 +49,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
   }
 
   function chooseScenario(riskKey: string, memberId: string) {
+    if (riskKey === selectedRiskKey && memberId === selectedMemberId) return
     setSelectedRiskKey(riskKey)
     setSelectedMemberId(memberId)
     setShowOutcomeExplanation(false)
@@ -91,7 +94,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
         <section className="scenario-composer" aria-labelledby="scenario-composer-title">
           <div><p className="section-kicker">Step 2</p><h3 id="scenario-composer-title">Choose what to test</h3><p>Select a responsibility and one of its role holders. You can also select nodes directly in the graph.</p></div>
           <div className="scenario-choice-group"><strong>Responsibility</strong><div className="scenario-choice-list">{workflowRisks.map((risk) => <button type="button" key={risk.key} className={risk.key === selectedRisk.key ? 'active' : ''} aria-pressed={risk.key === selectedRisk.key} onClick={() => chooseRisk(risk.key)}><span>{risk.requirementName}</span><small>{risk.roleName}</small><em className={outcomeTone(risk)}>{predictedOutcome(risk)}</em></button>)}</div></div>
-          <div className="scenario-choice-group"><strong>Role holder</strong><div className="member-choice-list">{selectedRisk.members.map((member) => <button type="button" key={member.id} className={member.id === selectedMember.id ? 'active' : ''} aria-pressed={member.id === selectedMember.id} onClick={() => { setSelectedMemberId(member.id); setShowOutcomeExplanation(false); mutation.reset() }}><span>{member.name}</span><small>{member.eligible ? 'Eligible for this responsibility' : 'Not eligible under this responsibility’s conditions'}</small></button>)}</div></div>
+          <div className="scenario-choice-group"><strong>Role holder</strong><div className="member-choice-list">{selectedRisk.members.map((member) => <button type="button" key={member.id} className={member.id === selectedMember.id ? 'active' : ''} aria-pressed={member.id === selectedMember.id} onClick={() => { if (member.id === selectedMemberId) return; setSelectedMemberId(member.id); setShowOutcomeExplanation(false); mutation.reset() }}><span>{member.name}</span><small>{member.eligible ? 'Eligible for this responsibility' : 'Not eligible under this responsibility’s conditions'}</small></button>)}</div></div>
           <div className={`continuity-signal ${coverageTone(selectedRisk, selectedMember.losesCoverage)}`}><strong>{coverageHeading(selectedRisk, selectedMember.losesCoverage)}</strong><span>{selectedRisk.eligibleMembers.length} eligible now · minimum {selectedRisk.minimumActors} · healthy target {selectedRisk.resilienceTarget}.</span></div>
           <div className="scenario-action-summary"><span>What if</span><strong>{selectedMember.name} loses {selectedRisk.roleName}?</strong><p>No organization data will be changed.</p></div>
           <div className="scenario-actions"><button type="button" disabled={mutation.isPending} onClick={() => runScenario(selectedRisk.key, selectedMember.id)}>{mutation.isPending ? 'Calculating impact…' : 'Run this what-if test'}</button>{mutation.data ? <button type="button" className="secondary-button" onClick={() => { setShowOutcomeExplanation(false); mutation.reset() }}>Reset to baseline</button> : null}</div>
@@ -105,7 +108,6 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
 }
 
 function OutcomeExplanation({ risk, member, onDismiss }: { risk: WorkflowRisk; member: WorkflowRisk['members'][number]; onDismiss: () => void }) {
-  const timer = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   const survivors = risk.eligibleMembers.filter((candidate) => candidate.id !== member.id || !member.losesCoverage)
   const tone = survivors.length < risk.minimumActors ? 'blocked' : survivors.length < risk.resilienceTarget ? 'degraded' : 'safe'
   const heading = tone === 'blocked' ? 'This responsibility is now blocked' : tone === 'degraded' ? 'It still works, but resilience is reduced' : 'Coverage remains healthy'
@@ -113,17 +115,8 @@ function OutcomeExplanation({ risk, member, onDismiss }: { risk: WorkflowRisk; m
     ? `${member.name} was the only eligible holder. No one can now perform ${risk.requirementName}.`
     : `${member.name} loses ${risk.roleName}, but ${formatNames(survivors.map((survivor) => survivor.name))} ${survivors.length === 1 ? 'still provides' : 'still provide'} coverage.`
 
-  const scheduleDismiss = useCallback(() => {
-    if (timer.current) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(onDismiss, 8000)
-  }, [onDismiss])
-  useEffect(() => {
-    scheduleDismiss()
-    return () => { if (timer.current) window.clearTimeout(timer.current) }
-  }, [scheduleDismiss])
-
   return (
-    <aside className={`outcome-explanation ${tone}`} role="status" aria-live="polite" onMouseEnter={() => { if (timer.current) window.clearTimeout(timer.current) }} onMouseLeave={scheduleDismiss}>
+    <aside className={`outcome-explanation ${tone}`} role="status" aria-live="polite">
       <span className="outcome-explanation-icon" aria-hidden="true">{tone === 'blocked' ? '!' : tone === 'degraded' ? '△' : '✓'}</span>
       <div><strong>{heading}</strong><p>{coverageText}</p><small>Rule: {survivors.length} eligible after change · minimum {risk.minimumActors} to operate · {risk.resilienceTarget} for healthy coverage.</small></div>
       <button type="button" aria-label="Dismiss outcome explanation" onClick={onDismiss}>×</button>
