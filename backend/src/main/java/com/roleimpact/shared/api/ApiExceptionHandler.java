@@ -13,6 +13,9 @@ import com.roleimpact.simulation.application.SimulationValidationException;
 import com.roleimpact.workspace.application.WorkspaceConflictException;
 import com.roleimpact.workspace.application.WorkspaceNotFoundException;
 import com.roleimpact.workspace.application.WorkspaceValidationException;
+import com.roleimpact.workspace.editor.application.DraftCatalogConflictException;
+import com.roleimpact.workspace.editor.application.DraftCatalogNotFoundException;
+import com.roleimpact.workspace.editor.application.PublishedWorkspaceMutationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +29,7 @@ public class ApiExceptionHandler {
 
 	@ExceptionHandler({OrganizationNotFoundException.class, ImpactEntityNotFoundException.class,
 			RecommendationNotFoundException.class, SimulationNotFoundException.class,
-			WorkspaceNotFoundException.class})
+			WorkspaceNotFoundException.class, DraftCatalogNotFoundException.class})
 	ResponseEntity<ErrorEnvelope> handleNotFound(RuntimeException exception) {
 		return error(HttpStatus.NOT_FOUND, "ENTITY_NOT_FOUND", exception.getMessage(), List.of());
 	}
@@ -49,6 +52,11 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(WorkspaceConflictException.class)
 	ResponseEntity<ErrorEnvelope> handleWorkspaceConflict(WorkspaceConflictException exception) {
 		return error(HttpStatus.CONFLICT, "WORKSPACE_CONFLICT", exception.getMessage(), List.of());
+	}
+
+	@ExceptionHandler({DraftCatalogConflictException.class, PublishedWorkspaceMutationException.class})
+	ResponseEntity<ErrorEnvelope> handleDraftCatalogConflict(RuntimeException exception) {
+		return error(HttpStatus.CONFLICT, "DRAFT_CATALOG_CONFLICT", exception.getMessage(), List.of());
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
