@@ -17,9 +17,17 @@ and mitigation vertical slice:
 - Deterministic revoke-role impact analysis with stable result hashing
 - Ranked, evidence-backed replacement recommendations
 - Persisted parent/child mitigation simulations with idempotent replay
+- Stateless impact and mitigation previews for user-built draft organizations
+- Draft recommendations that verify eligibility and workflow recovery after the
+  proposed role assignment, even when the candidate does not already have the
+  access that the new role would grant
 - Before-and-after workflow comparison in the UI
-- Interactive focused impact graph with removed, blocked, degraded, added, and
-  restored relationship states
+- Interactive impact map where teams, members, roles, responsibilities, and
+  workflows reveal their complete connected paths and contextual test actions
+- Workflow-focused and full-organization views with removed, blocked, degraded,
+  candidate, and restored relationship states
+- Direct member selection for inspecting and testing recommended, alternative,
+  or excluded replacements without changing the organization baseline
 - Selectable graph nodes, original/mitigation toggling, and an accessible text
   representation of every relationship path
 - Flyway-managed relational schema and Harborline Commerce seed
@@ -76,6 +84,11 @@ impact.
 - `GET /api/v1/simulations/{simulationId}` retrieves an immutable saved result.
 - `POST /api/v1/simulations/{simulationId}/branches` tests and saves a
   recommendation as a child mitigation simulation.
+- `POST /api/v1/workspaces/{workspaceId}/impact-previews` tests a role removal
+  against the current draft without changing it.
+- `POST /api/v1/workspaces/{workspaceId}/impact-previews/mitigations` verifies a
+  user-selected replacement against the same draft snapshot and returns the
+  original and mitigated outcomes for comparison.
 - `GET /api/v1/health` reports API availability.
 
 ## Tests

@@ -789,17 +789,9 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 			}
 
 			var candidatePermissions = baselinePermissions.getOrDefault(candidate.id(), Set.of());
-			var missingApplications = relevantApplications.stream()
-					.filter(application -> !hasApplicationAccess(snapshot, candidatePermissions, application.id()))
+			var existingApplicationAccess = relevantApplications.stream()
+					.filter(application -> hasApplicationAccess(snapshot, candidatePermissions, application.id()))
 					.toList();
-			if (!missingApplications.isEmpty()) {
-				exclusions.add(new CandidateExclusion(
-						new EntityRef(candidate.id(), candidate.name()),
-						List.of(new CandidateExclusionReason(
-								CandidateExclusionReasonCode.MISSING_RELEVANT_APPLICATION_ACCESS,
-								"Missing existing access to: " + joinedNames(missingApplications)))));
-				continue;
-			}
 
 			var branchAssignments = copyAssignments(revokedAssignments);
 			branchAssignments.computeIfAbsent(candidate.id(), ignored -> new LinkedHashSet<>()).add(roleId);
@@ -842,7 +834,7 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 			safeCandidates.add(new CandidateEvaluation(
 					candidate,
 					gainedPermissionIds,
-					relevantApplications,
+					existingApplicationAccess,
 					restoredWorkflows,
 					restoredWorkflowSteps,
 					sourceEmployee.teamId().equals(candidate.teamId()),
@@ -863,7 +855,9 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 			var candidate = orderedCandidates.get(index);
 			var evidence = new ArrayList<RecommendationEvidence>();
 			evidence.add(RecommendationEvidence.ACTIVE_EMPLOYEE);
-			evidence.add(RecommendationEvidence.EXISTING_RELEVANT_APPLICATION_ACCESS);
+			if (candidate.existingApplicationAccess().size() == relevantApplications.size()) {
+				evidence.add(RecommendationEvidence.EXISTING_RELEVANT_APPLICATION_ACCESS);
+			}
 			evidence.add(RecommendationEvidence.AFFECTED_STEP_CONSTRAINTS_SATISFIED);
 			if (candidate.differentActorsSatisfied()) {
 				evidence.add(RecommendationEvidence.DIFFERENT_ACTORS_SATISFIED);

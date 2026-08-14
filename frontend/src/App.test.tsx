@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { DraftCatalog } from './api/draftCatalog'
+import type { DraftImpactResult, DraftMitigationPreview } from './api/draftImpact'
+import type { Simulation } from './api/simulations'
 
 afterEach(() => {
   cleanup()
@@ -201,6 +203,7 @@ describe('App', () => {
         catalog = { ...catalog, workflows: [{ id: 'workflow-1', name: input.name, criticality: input.criticality, quickManaged: true, requirements: [{ id: 'requirement-1', name: input.requirementName, position: 1, minimumActors: 1, resilienceTarget: 1, requiredDepartment: null, requiredRegion: null, requiredShift: null, roleIds: ['role-1'] }] }] }
         return jsonResponse(catalog)
       }
+      if (url.endsWith('/impact-previews/mitigations') && init?.method === 'POST') return jsonResponse(customDraftMitigationPreviewFixture)
       if (url.endsWith('/impact-previews') && init?.method === 'POST') return jsonResponse(customDraftImpactFixture)
       if (url.endsWith('/catalog/workflows/workflow-1') && init?.method === 'DELETE') {
         catalog = { ...catalog, workflows: [] }
@@ -228,6 +231,11 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Create member' }))
     expect(await screen.findByText('Member created')).toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: 'Add Member' }))
+    await user.type(screen.getByLabelText('Member name'), 'Arjun Mehta')
+    await user.click(screen.getByRole('button', { name: 'Create member' }))
+    expect(await screen.findByText('Member created')).toBeInTheDocument()
+
     await user.click(screen.getByRole('button', { name: 'Add Role' }))
     await user.type(screen.getByLabelText('Role name'), 'Release Manager')
     await user.selectOptions(screen.getByLabelText('Sensitivity'), 'HIGH')
@@ -249,9 +257,10 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Organization map' }))
     expect(screen.getByLabelText('Organization inventory')).toHaveTextContent('Production Deployment')
     expect(screen.getByLabelText('Organization relationship canvas')).toBeInTheDocument()
-    expect(screen.getByText('5 objects · 4 connections')).toBeInTheDocument()
+    expect(screen.getByText('6 objects · 5 connections')).toBeInTheDocument()
     expect(screen.getByLabelText('Team Platform')).toBeInTheDocument()
     expect(screen.getByLabelText('Member Maya Singh')).toBeInTheDocument()
+    expect(screen.getByLabelText('Member Arjun Mehta')).toBeInTheDocument()
     expect(screen.getByLabelText('Role Release Manager')).toBeInTheDocument()
     expect(screen.getByLabelText('Responsibility Release Manager responsibility')).toBeInTheDocument()
     expect(screen.getByLabelText('Workflow Production Deployment')).toBeInTheDocument()
@@ -272,18 +281,50 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Test this risk' }))
     expect(await screen.findByRole('heading', { name: 'Test a change before it happens' })).toBeInTheDocument()
-    expect(await screen.findByLabelText('Production Deployment baseline and impact graph')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
+    expect(await screen.findByLabelText('Complete organization impact map')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show full map' }))
+    expect(screen.getByRole('button', { name: 'Focus Production Deployment' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/member Maya Singh/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/member Arjun Mehta/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText(/team Platform/i))
+    expect(screen.getByLabelText('Selected Team Platform')).toHaveTextContent('Connected workflows')
+    fireEvent.click(screen.getByLabelText(/workflow Production Deployment/i))
+    expect(screen.getByLabelText('Selected Workflow Production Deployment')).toHaveTextContent('highlighted graph')
+    fireEvent.click(screen.getByLabelText(/responsibility Release Manager responsibility/i))
+    expect(screen.getByLabelText('Selected Responsibility Release Manager responsibility')).toHaveTextContent('Eligible now')
+    fireEvent.click(screen.getByLabelText(/role Release Manager/i))
+    expect(screen.getByLabelText('Selected Role Release Manager')).toHaveTextContent('Workflow responsibilities')
+    expect(screen.getByRole('button', { name: 'Fit selection' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }))
+    expect(screen.queryByRole('button', { name: 'Fit selection' })).not.toBeInTheDocument()
+    const mayaImpactActions = document.querySelector<HTMLButtonElement>('button[aria-label="Impact actions for Maya Singh"]')
+    const arjunImpactActions = document.querySelector<HTMLButtonElement>('button[aria-label="Impact actions for Arjun Mehta"]')
+    expect(mayaImpactActions).toBeInTheDocument()
+    expect(arjunImpactActions).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Production Deployment.*would block/ })).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.contextMenu(screen.getByLabelText(/Member Maya Singh.*context menu/))
-    expect(screen.getByRole('menu', { name: 'What-if actions for Maya Singh' })).toBeInTheDocument()
-    await user.click(screen.getByRole('menuitem', { name: 'Test losing Release Manager' }))
+    fireEvent.click(screen.getByLabelText(/member Maya Singh/i))
+    const selectedMaya = screen.getByLabelText('Selected Member Maya Singh')
+    expect(selectedMaya).toHaveTextContent('Connected workflows')
+    await user.click(within(selectedMaya).getByRole('button', { name: 'Test losing Release Manager' }))
     expect(await screen.findByText('This responsibility is now blocked')).toBeInTheDocument()
     expect(screen.getByText(/Maya Singh was the only eligible holder/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Production Deployment.*would block/ }))
     expect(screen.getByText('This responsibility is now blocked')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'A workflow would be blocked' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Production Deployment baseline and impact graph')).toBeInTheDocument()
+    expect(screen.getByLabelText('Complete organization impact map')).toBeInTheDocument()
+    expect(screen.getByLabelText(/member Arjun Mehta.*Recommended #1/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reset to baseline' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Test a safe replacement' })).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText(/member Arjun Mehta.*Recommended #1/i))
+    const selectedArjun = screen.getByLabelText('Selected Member Arjun Mehta')
+    await user.click(within(selectedArjun).getByRole('button', { name: 'Try as replacement for Release Manager' }))
+    expect(await screen.findByLabelText('Original and mitigated outcome')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /With mitigation.*Coverage restored/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('heading', { name: 'Arjun Mehta is a recommended replacement' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/member Arjun Mehta.*Tried · restores coverage/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Original impact.*1 blocked/ }))
+    expect(screen.getByRole('button', { name: /Original impact.*1 blocked/ })).toHaveAttribute('aria-pressed', 'true')
 
     await user.click(screen.getByRole('button', { name: 'Organization map' }))
     const inventory = screen.getByLabelText('Organization inventory')
@@ -292,11 +333,6 @@ describe('App', () => {
     const dialog = screen.getByRole('dialog', { name: 'Remove Production Deployment?' })
     await user.click(within(dialog).getByRole('button', { name: 'Delete object' }))
     expect(await screen.findByText('Workflow deleted')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Add Member' }))
-    await user.type(screen.getByLabelText('Member name'), 'Arjun Mehta')
-    await user.click(screen.getByRole('button', { name: 'Create member' }))
-    expect(await screen.findByText('Member created')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Add Role' }))
     await user.type(screen.getByLabelText('Role name'), 'Release Manager')
@@ -647,8 +683,9 @@ const simulationFixture = {
   },
 }
 
-const customDraftImpactFixture = {
-  ...simulationFixture.result,
+const customDraftImpactFixture: DraftImpactResult = {
+  ...(simulationFixture.result as Simulation['result']),
+  organizationId: 'workspace-1',
   baselineVersion: 0,
   changeSet: {
     type: 'REVOKE_EMPLOYEE_ROLE',
@@ -663,12 +700,67 @@ const customDraftImpactFixture = {
   },
   workflowImpacts: [
     {
-      ...simulationFixture.result.workflowImpacts[0],
+      ...(simulationFixture.result.workflowImpacts[0] as DraftImpactResult['workflowImpacts'][number]),
       workflowId: 'workflow-1',
       workflowName: 'Production Deployment',
       scenarioStatus: 'BLOCKED',
+      steps: [
+        {
+          stepId: 'requirement-1',
+          stepKey: 'release_manager_responsibility_1',
+          stepName: 'Release Manager responsibility',
+          minimumActors: 1,
+          resilienceTarget: 1,
+          baselineStatus: 'OPERATIONAL',
+          scenarioStatus: 'BLOCKED',
+          baselineEligibleActors: [{ id: 'member-1', name: 'Maya Singh' }],
+          scenarioEligibleActors: [],
+          consequence: 'Release Manager responsibility has no eligible actors.',
+        },
+      ],
     },
   ],
+  recommendations: [
+    {
+      ...(simulationFixture.result.recommendations[0] as DraftImpactResult['recommendations'][number]),
+      id: 'recommendation-1',
+      candidate: { id: 'member-2', name: 'Arjun Mehta' },
+      role: { id: 'role-1', name: 'Release Manager' },
+      restoredWorkflows: [{ id: 'workflow-1', name: 'Production Deployment' }],
+      restoredWorkflowSteps: [{ id: 'requirement-1', name: 'Release Manager responsibility' }],
+    },
+  ],
+  excludedCandidateReasons: [],
+}
+
+const customDraftMitigationPreviewFixture: DraftMitigationPreview = {
+  original: customDraftImpactFixture,
+  mitigation: {
+    ...customDraftImpactFixture,
+    overallSeverity: 'LOW',
+    executiveSummary: {
+      ...customDraftImpactFixture.executiveSummary,
+      workflowsBlocked: 0,
+      workflowsDegraded: 0,
+    },
+    changeSet: {
+      ...customDraftImpactFixture.changeSet,
+      type: 'REVOKE_EMPLOYEE_ROLE_AND_ASSIGN_REPLACEMENT',
+      replacementEmployee: { id: 'member-2', name: 'Arjun Mehta' },
+    },
+    technicalImpact: {
+      ...customDraftImpactFixture.technicalImpact,
+      assignedRoles: [{ id: 'role-1', name: 'Release Manager' }],
+    },
+    workflowImpacts: customDraftImpactFixture.workflowImpacts.map((workflow) => ({
+      ...workflow,
+      scenarioStatus: 'OPERATIONAL',
+      failures: [],
+      steps: workflow.steps.map((step) => ({ ...step, scenarioStatus: 'OPERATIONAL' })),
+    })),
+    recommendations: [],
+    excludedCandidateReasons: [],
+  },
 }
 
 const mitigationFixture = {
