@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
@@ -173,6 +174,37 @@ class WorkspaceIntegrationTest {
 		UUID memberId = UUID.fromString(objectMapper.readTree(memberResponse.getResponse().getContentAsString())
 				.path("members").get(0).path("id").asText());
 
+		var candidateResponse = mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/catalog/members", workspaceId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "teamId":"%s", "name":"Arjun Mehta", "status":"ACTIVE",
+								  "region":"NORTH_AMERICA", "shift":"DAY"
+								}
+								""".formatted(teamId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.teams[0].memberCount").value(2))
+				.andReturn();
+		UUID candidateId = findId(
+				objectMapper.readTree(candidateResponse.getResponse().getContentAsString()),
+				"members",
+				"Arjun Mehta");
+		var inactiveCandidateResponse = mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/catalog/members", workspaceId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "teamId":"%s", "name":"Dylan Moore", "status":"INACTIVE",
+								  "region":"NORTH_AMERICA", "shift":"DAY"
+								}
+								""".formatted(teamId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.teams[0].memberCount").value(3))
+				.andReturn();
+		UUID inactiveCandidateId = findId(
+				objectMapper.readTree(inactiveCandidateResponse.getResponse().getContentAsString()),
+				"members",
+				"Dylan Moore");
+
 		var roleResponse = mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/catalog/roles", workspaceId)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
@@ -187,19 +219,23 @@ class WorkspaceIntegrationTest {
 		UUID roleId = UUID.fromString(objectMapper.readTree(roleResponse.getResponse().getContentAsString())
 				.path("roles").get(0).path("id").asText());
 
-		mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}/roles", workspaceId, memberId)
+		var assignmentResponse = mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}/roles", workspaceId, memberId)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"roleIds\":[\"" + roleId + "\"]}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.members[0].roleIds[0]").value(roleId.toString()))
-				.andExpect(jsonPath("$.roles[0].memberCount").value(1));
+				.andExpect(jsonPath("$.roles[0].memberCount").value(1))
+				.andReturn();
+		assertThat(findById(
+				objectMapper.readTree(assignmentResponse.getResponse().getContentAsString()),
+				"members",
+				memberId).path("roleIds").get(0).asText()).isEqualTo(roleId.toString());
 
 		mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/teams/{teamId}", workspaceId, teamId)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"name\":\"Platform Operations\",\"department\":\"Technology\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.teams[0].name").value("Platform Operations"));
-		mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}", workspaceId, memberId)
+		var updatedMemberResponse = mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}", workspaceId, memberId)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -209,7 +245,11 @@ class WorkspaceIntegrationTest {
 								}
 								""".formatted(teamId)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.members[0].name").value("Maya Patel"));
+				.andReturn();
+		assertThat(findById(
+				objectMapper.readTree(updatedMemberResponse.getResponse().getContentAsString()),
+				"members",
+				memberId).path("name").asText()).isEqualTo("Maya Patel");
 		mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/roles/{roleId}", workspaceId, roleId)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
@@ -260,7 +300,7 @@ class WorkspaceIntegrationTest {
 		assertThat(countForOrganization("permissions", workspaceId)).isEqualTo(2);
 		assertThat(countForOrganization("capabilities", workspaceId)).isEqualTo(2);
 
-		mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/impact-previews", workspaceId)
+		var previewResponse = mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/impact-previews", workspaceId)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{"memberId":"%s","roleId":"%s"}
@@ -272,7 +312,47 @@ class WorkspaceIntegrationTest {
 				.andExpect(jsonPath("$.changeSet.employee.name").value("Maya Patel"))
 				.andExpect(jsonPath("$.changeSet.role.name").value("Production Release Manager"))
 				.andExpect(jsonPath("$.workflowImpacts[0].workflowName").value("Production Deployment"))
-				.andExpect(jsonPath("$.workflowImpacts[0].scenarioStatus").value("BLOCKED"));
+				.andExpect(jsonPath("$.workflowImpacts[0].scenarioStatus").value("BLOCKED"))
+				.andExpect(jsonPath("$.recommendations[0].candidate.id").value(candidateId.toString()))
+				.andReturn();
+		assertThat(objectMapper.readTree(previewResponse.getResponse().getContentAsString())
+				.path("recommendations").get(0).path("id").asText()).isNotBlank();
+
+		mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/impact-previews/mitigations", workspaceId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+							  "memberId":"%s", "roleId":"%s", "replacementMemberId":"%s"
+							}
+							""".formatted(memberId, roleId, candidateId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.original.overallSeverity").value("CRITICAL"))
+				.andExpect(jsonPath("$.mitigation.overallSeverity").value("LOW"))
+				.andExpect(jsonPath("$.mitigation.changeSet.replacementEmployee.id").value(candidateId.toString()))
+				.andExpect(jsonPath("$.mitigation.executiveSummary.workflowsBlocked").value(0))
+				.andExpect(jsonPath("$.mitigation.workflowImpacts[0].scenarioStatus").value("DEGRADED"));
+
+		mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/impact-previews/mitigations", workspaceId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "memberId":"%s", "roleId":"%s", "replacementMemberId":"%s"
+								}
+								""".formatted(memberId, roleId, inactiveCandidateId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.mitigation.changeSet.replacementEmployee.id").value(inactiveCandidateId.toString()))
+				.andExpect(jsonPath("$.mitigation.overallSeverity").value("CRITICAL"))
+				.andExpect(jsonPath("$.mitigation.executiveSummary.workflowsBlocked").value(1));
+
+		var catalogAfterMitigation = mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/catalog", workspaceId))
+				.andExpect(status().isOk())
+				.andReturn();
+		var catalogAfterMitigationJson = objectMapper.readTree(
+				catalogAfterMitigation.getResponse().getContentAsString());
+		assertThat(findById(catalogAfterMitigationJson, "members", memberId).path("roleIds"))
+				.extracting(JsonNode::asText)
+				.containsExactly(roleId.toString());
+		assertThat(findById(catalogAfterMitigationJson, "members", candidateId).path("roleIds")).isEmpty();
 
 		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/teams/{teamId}", workspaceId, teamId))
 				.andExpect(status().isConflict())
@@ -296,6 +376,10 @@ class WorkspaceIntegrationTest {
 				.andExpect(jsonPath("$.members[0].roleIds").isEmpty());
 		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}", workspaceId, memberId))
 				.andExpect(status().isOk());
+		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}", workspaceId, candidateId))
+				.andExpect(status().isOk());
+		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}", workspaceId, inactiveCandidateId))
+				.andExpect(status().isOk());
 		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/teams/{teamId}", workspaceId, teamId))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.teams").isEmpty());
@@ -314,6 +398,16 @@ class WorkspaceIntegrationTest {
 			if (name.equals(item.path("name").asText())) return UUID.fromString(item.path("id").asText());
 		}
 		throw new IllegalArgumentException(name + " was not found in " + collection);
+	}
+
+	private com.fasterxml.jackson.databind.JsonNode findById(
+			com.fasterxml.jackson.databind.JsonNode root,
+			String collection,
+			UUID id) {
+		for (var item : root.path(collection)) {
+			if (id.toString().equals(item.path("id").asText())) return item;
+		}
+		throw new IllegalArgumentException(id + " was not found in " + collection);
 	}
 
 	private void assertPreview(

@@ -29,4 +29,11 @@ public class DraftImpactPreviewController {
 			@Valid @RequestBody DraftImpactPreviewRequest request) {
 		return service.preview(workspaceId, request);
 	}
+
+	@PostMapping("/mitigations")
+	public DraftMitigationPreviewResource createMitigation(
+			@PathVariable UUID workspaceId,
+			@Valid @RequestBody DraftMitigationPreviewRequest request) {
+		return service.previewMitigation(workspaceId, request);
+	}
 }

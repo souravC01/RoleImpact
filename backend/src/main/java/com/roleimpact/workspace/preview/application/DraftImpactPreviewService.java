@@ -6,11 +6,14 @@ import com.roleimpact.catalog.snapshot.OrganizationSnapshotAssembler;
 import com.roleimpact.impactengine.ImpactEngine;
 import com.roleimpact.impactengine.ImpactResult;
 import com.roleimpact.impactengine.InvalidImpactChangeException;
+import com.roleimpact.impactengine.RevokeAndAssignEmployeeRole;
 import com.roleimpact.impactengine.RevokeEmployeeRole;
 import com.roleimpact.workspace.application.WorkspaceNotFoundException;
 import com.roleimpact.workspace.editor.application.PublishedWorkspaceMutationException;
 import com.roleimpact.workspace.editor.persistence.DraftCatalogRepository;
 import com.roleimpact.workspace.preview.api.DraftImpactPreviewRequest;
+import com.roleimpact.workspace.preview.api.DraftMitigationPreviewRequest;
+import com.roleimpact.workspace.preview.api.DraftMitigationPreviewResource;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +36,35 @@ public class DraftImpactPreviewService {
 
 	@Transactional(readOnly = true)
 	public ImpactResult preview(UUID workspaceId, DraftImpactPreviewRequest request) {
+		validateDraftAssignment(workspaceId, request.memberId(), request.roleId());
+		var snapshot = snapshotAssembler.assemble(workspaceId);
+		return impactEngine.analyze(snapshot, new RevokeEmployeeRole(request.memberId(), request.roleId()));
+	}
+
+	@Transactional(readOnly = true)
+	public DraftMitigationPreviewResource previewMitigation(
+			UUID workspaceId,
+			DraftMitigationPreviewRequest request) {
+		validateDraftAssignment(workspaceId, request.memberId(), request.roleId());
+		var snapshot = snapshotAssembler.assemble(workspaceId);
+		var original = impactEngine.analyze(
+				snapshot,
+				new RevokeEmployeeRole(request.memberId(), request.roleId()));
+		var mitigation = impactEngine.analyze(
+				snapshot,
+				new RevokeAndAssignEmployeeRole(
+						request.memberId(),
+						request.roleId(),
+						request.replacementMemberId()));
+		return new DraftMitigationPreviewResource(original, mitigation);
+	}
+
+	private void validateDraftAssignment(UUID workspaceId, UUID memberId, UUID roleId) {
 		String status = catalogRepository.findWorkspaceStatus(workspaceId)
 				.orElseThrow(() -> new WorkspaceNotFoundException(workspaceId));
 		if (!"DRAFT".equals(status)) throw new PublishedWorkspaceMutationException();
-		if (!catalogRepository.assignmentExists(workspaceId, request.memberId(), request.roleId())) {
+		if (!catalogRepository.assignmentExists(workspaceId, memberId, roleId)) {
 			throw new InvalidImpactChangeException("The selected member does not currently hold this role");
 		}
-		var snapshot = snapshotAssembler.assemble(workspaceId);
-		return impactEngine.analyze(snapshot, new RevokeEmployeeRole(request.memberId(), request.roleId()));
 	}
 }

@@ -1,10 +1,14 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { runDraftImpactPreview, type DraftImpactResult } from '../../../api/draftImpact'
+import {
+  runDraftImpactPreview,
+  runDraftMitigationPreview,
+  type DraftImpactResult,
+} from '../../../api/draftImpact'
 import type { DraftCatalog } from '../../../api/draftCatalog'
 import { findWorkflowRisks, type WorkflowRisk } from './workflowRisks'
 
-const WorkflowScenarioCanvas = lazy(() => import('./WorkflowScenarioCanvas'))
+const FullOrganizationImpactCanvas = lazy(() => import('./OrganizationCanvas').then((module) => ({ default: module.OrganizationImpactCanvas })))
 
 export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }: {
   workspaceId: string
@@ -22,12 +26,34 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
   const selectedRisk = workflowRisks.find((risk) => risk.key === selectedRiskKey) ?? workflowRisks[0]
   const [selectedMemberId, setSelectedMemberId] = useState(selectedRisk?.members[0]?.id ?? '')
   const [showOutcomeExplanation, setShowOutcomeExplanation] = useState(false)
+  const [comparisonView, setComparisonView] = useState<'original' | 'mitigation'>('original')
   const selectedMember = selectedRisk?.members.find((member) => member.id === selectedMemberId) ?? selectedRisk?.members[0]
   const testableWorkflows = catalog.workflows.filter((workflow) => testableRisks.some((risk) => risk.workflowId === workflow.id))
+  const mitigationMutation = useMutation({
+    mutationFn: ({ memberId, roleId, replacementMemberId }: { memberId: string; roleId: string; replacementMemberId: string }) =>
+      runDraftMitigationPreview(workspaceId, memberId, roleId, replacementMemberId),
+    onSuccess: () => {
+      setShowOutcomeExplanation(false)
+      setComparisonView('mitigation')
+    },
+  })
   const mutation = useMutation({
     mutationFn: ({ memberId, roleId }: { memberId: string; roleId: string }) => runDraftImpactPreview(workspaceId, memberId, roleId),
-    onSuccess: () => setShowOutcomeExplanation(true),
+    onSuccess: () => {
+      mitigationMutation.reset()
+      setComparisonView('original')
+      setShowOutcomeExplanation(true)
+    },
   })
+  const originalResult = mitigationMutation.data?.original ?? mutation.data
+  const displayedResult = comparisonView === 'mitigation' ? mitigationMutation.data?.mitigation : originalResult
+
+  function resetResults() {
+    setShowOutcomeExplanation(false)
+    setComparisonView('original')
+    mutation.reset()
+    mitigationMutation.reset()
+  }
 
   function chooseWorkflow(workflowId: string) {
     if (workflowId === selectedWorkflowId) return
@@ -35,8 +61,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
     setSelectedWorkflowId(workflowId)
     setSelectedRiskKey(firstRisk?.key ?? '')
     setSelectedMemberId(firstRisk?.members[0]?.id ?? '')
-    setShowOutcomeExplanation(false)
-    mutation.reset()
+    resetResults()
   }
 
   function chooseRisk(riskKey: string) {
@@ -44,16 +69,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
     const risk = workflowRisks.find((candidate) => candidate.key === riskKey)
     setSelectedRiskKey(riskKey)
     setSelectedMemberId(risk?.members[0]?.id ?? '')
-    setShowOutcomeExplanation(false)
-    mutation.reset()
-  }
-
-  function chooseScenario(riskKey: string, memberId: string) {
-    if (riskKey === selectedRiskKey && memberId === selectedMemberId) return
-    setSelectedRiskKey(riskKey)
-    setSelectedMemberId(memberId)
-    setShowOutcomeExplanation(false)
-    mutation.reset()
+    resetResults()
   }
 
   function runScenario(riskKey: string, memberId: string) {
@@ -61,7 +77,14 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
     if (!risk) return
     setSelectedRiskKey(riskKey)
     setSelectedMemberId(memberId)
+    mitigationMutation.reset()
+    setComparisonView('original')
     mutation.mutate({ memberId, roleId: risk.roleId })
+  }
+
+  function tryReplacement(replacementMemberId: string) {
+    if (!originalResult || !selectedRisk || mitigationMutation.isPending) return
+    mitigationMutation.mutate({ memberId: originalResult.changeSet.employee.id, roleId: selectedRisk.roleId, replacementMemberId })
   }
 
   if (catalog.workflows.length === 0) {
@@ -86,24 +109,130 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
       </aside>
 
       <div className="impact-explorer-main">
-        <Suspense fallback={<p className="editor-state">Drawing the current workflow…</p>}>
-          <WorkflowScenarioCanvas catalog={catalog} workflowId={selectedWorkflowId} risks={workflowRisks} selectedRiskKey={selectedRisk.key} selectedMemberId={selectedMember.id} result={mutation.data} onSelect={chooseScenario} onRunScenario={runScenario} />
+        {mitigationMutation.data ? (
+          <ScenarioComparisonSwitch
+            original={mitigationMutation.data.original}
+            mitigation={mitigationMutation.data.mitigation}
+            view={comparisonView}
+            onChange={setComparisonView}
+          />
+        ) : null}
+        <Suspense fallback={<p className="editor-state">Drawing the complete organization…</p>}>
+          <FullOrganizationImpactCanvas
+            workspaceId={workspaceId}
+            catalog={catalog}
+            workflowId={selectedWorkflowId}
+            risks={workflowRisks}
+            selectedRiskKey={selectedRisk.key}
+            selectedMemberId={selectedMember.id}
+            originalResult={originalResult}
+            displayedResult={displayedResult}
+            isPending={mutation.isPending || mitigationMutation.isPending}
+            onRunScenario={runScenario}
+            onTryReplacement={tryReplacement}
+          />
         </Suspense>
-        {mutation.data && showOutcomeExplanation ? <OutcomeExplanation key={`${mutation.submittedAt}`} risk={selectedRisk} member={selectedMember} onDismiss={() => setShowOutcomeExplanation(false)} /> : null}
+        {originalResult && showOutcomeExplanation ? <OutcomeExplanation key={`${mutation.submittedAt}`} risk={selectedRisk} member={selectedMember} onDismiss={() => setShowOutcomeExplanation(false)} /> : null}
 
         <section className="scenario-composer" aria-labelledby="scenario-composer-title">
-          <div><p className="section-kicker">Step 2</p><h3 id="scenario-composer-title">Choose what to test</h3><p>Select a responsibility and one of its role holders. You can also select nodes directly in the graph.</p></div>
+          <div><p className="section-kicker">Step 2</p><h3 id="scenario-composer-title">Choose what to test</h3><p>Use these controls as a precise alternative to selecting people directly on the full organization map.</p></div>
           <div className="scenario-choice-group"><strong>Responsibility</strong><div className="scenario-choice-list">{workflowRisks.map((risk) => <button type="button" key={risk.key} className={risk.key === selectedRisk.key ? 'active' : ''} aria-pressed={risk.key === selectedRisk.key} onClick={() => chooseRisk(risk.key)}><span>{risk.requirementName}</span><small>{risk.roleName}</small><em className={outcomeTone(risk)}>{predictedOutcome(risk)}</em></button>)}</div></div>
-          <div className="scenario-choice-group"><strong>Role holder</strong><div className="member-choice-list">{selectedRisk.members.map((member) => <button type="button" key={member.id} className={member.id === selectedMember.id ? 'active' : ''} aria-pressed={member.id === selectedMember.id} onClick={() => { if (member.id === selectedMemberId) return; setSelectedMemberId(member.id); setShowOutcomeExplanation(false); mutation.reset() }}><span>{member.name}</span><small>{member.eligible ? 'Eligible for this responsibility' : 'Not eligible under this responsibility’s conditions'}</small></button>)}</div></div>
+          <div className="scenario-choice-group"><strong>Role holder</strong><div className="member-choice-list">{selectedRisk.members.map((member) => <button type="button" key={member.id} className={member.id === selectedMember.id ? 'active' : ''} aria-pressed={member.id === selectedMember.id} onClick={() => { if (member.id === selectedMemberId) return; setSelectedMemberId(member.id); resetResults() }}><span>{member.name}</span><small>{member.eligible ? 'Eligible for this responsibility' : 'Not eligible under this responsibility’s conditions'}</small></button>)}</div></div>
           <div className={`continuity-signal ${coverageTone(selectedRisk, selectedMember.losesCoverage)}`}><strong>{coverageHeading(selectedRisk, selectedMember.losesCoverage)}</strong><span>{selectedRisk.eligibleMembers.length} eligible now · minimum {selectedRisk.minimumActors} · healthy target {selectedRisk.resilienceTarget}.</span></div>
           <div className="scenario-action-summary"><span>What if</span><strong>{selectedMember.name} loses {selectedRisk.roleName}?</strong><p>No organization data will be changed.</p></div>
-          <div className="scenario-actions"><button type="button" disabled={mutation.isPending} onClick={() => runScenario(selectedRisk.key, selectedMember.id)}>{mutation.isPending ? 'Calculating impact…' : 'Run this what-if test'}</button>{mutation.data ? <button type="button" className="secondary-button" onClick={() => { setShowOutcomeExplanation(false); mutation.reset() }}>Reset to baseline</button> : null}</div>
+          <div className="scenario-actions"><button type="button" disabled={mutation.isPending || mitigationMutation.isPending} onClick={() => runScenario(selectedRisk.key, selectedMember.id)}>{mutation.isPending ? 'Calculating impact…' : 'Run this what-if test'}</button>{originalResult ? <button type="button" className="secondary-button" onClick={resetResults}>Reset to baseline</button> : null}</div>
           {mutation.isError ? <p className="form-error" role="alert">{mutation.error.message}</p> : null}
         </section>
 
-        {mutation.data ? <ImpactResultSummary result={mutation.data} requirementName={selectedRisk.requirementName} /> : null}
+        {displayedResult ? <ImpactResultSummary result={displayedResult} requirementName={selectedRisk.requirementName} /> : null}
+        {mitigationMutation.data ? <ReplacementAssessment original={mitigationMutation.data.original} mitigation={mitigationMutation.data.mitigation} /> : null}
+        {originalResult ? (
+          <DraftMitigationPanel
+            result={originalResult}
+            mitigation={mitigationMutation.data?.mitigation}
+            isPending={mitigationMutation.isPending}
+            error={mitigationMutation.error}
+            onTest={tryReplacement}
+          />
+        ) : null}
       </div>
     </div>
+  )
+}
+
+function ScenarioComparisonSwitch({ original, mitigation, view, onChange }: {
+  original: DraftImpactResult
+  mitigation: DraftImpactResult
+  view: 'original' | 'mitigation'
+  onChange: (view: 'original' | 'mitigation') => void
+}) {
+  const replacement = mitigation.changeSet.replacementEmployee?.name ?? 'the recommended replacement'
+  return (
+    <section className="draft-comparison-switch" aria-label="Original and mitigated outcome">
+      <div><p className="section-kicker">Mitigation verified</p><strong>Compare the disruption with {replacement} covering the role</strong><span>The organization baseline has not been changed.</span></div>
+      <div className="draft-comparison-options">
+        <button type="button" className={view === 'original' ? 'active' : ''} aria-pressed={view === 'original'} onClick={() => onChange('original')}><span>Original impact</span><strong>{outcomeCount(original)}</strong></button>
+        <button type="button" className={view === 'mitigation' ? 'active' : ''} aria-pressed={view === 'mitigation'} onClick={() => onChange('mitigation')}><span>With mitigation</span><strong>{outcomeCount(mitigation)}</strong></button>
+      </div>
+    </section>
+  )
+}
+
+function ReplacementAssessment({ original, mitigation }: { original: DraftImpactResult; mitigation: DraftImpactResult }) {
+  const replacement = mitigation.changeSet.replacementEmployee
+  if (!replacement) return null
+  const recommendation = original.recommendations.find((candidate) => candidate.candidate.id === replacement.id)
+  const exclusion = original.excludedCandidateReasons.find((candidate) => candidate.candidate.id === replacement.id)
+  const restored = mitigation.executiveSummary.workflowsBlocked === 0 && mitigation.workflowImpacts.every((workflow) => workflow.scenarioStatus === workflow.baselineStatus)
+  return (
+    <section className={`replacement-assessment ${exclusion || !restored ? 'warning' : 'safe'}`} aria-live="polite">
+      <div><p className="section-kicker">Selected replacement</p><h3>{recommendation ? `${replacement.name} is a recommended replacement` : exclusion ? `${replacement.name} was not recommended` : `${replacement.name} is a safe alternative`}</h3><p>{exclusion ? exclusion.reasons.map((reason) => reason.detail).join(' ') : restored ? `The proposed assignment restores the affected workflows to their baseline state without changing the organization.` : `The proposed assignment was evaluated, but it does not fully restore the affected workflows.`}</p></div>
+      <span>{restored ? 'Coverage restored' : outcomeCount(mitigation)}</span>
+    </section>
+  )
+}
+
+function DraftMitigationPanel({ result, mitigation, isPending, error, onTest }: {
+  result: DraftImpactResult
+  mitigation?: DraftImpactResult
+  isPending: boolean
+  error: Error | null
+  onTest: (replacementMemberId: string) => void
+}) {
+  const disruptionCount = result.executiveSummary.workflowsBlocked + result.executiveSummary.workflowsDegraded
+  if (result.recommendations.length === 0) {
+    return (
+      <section className={`draft-mitigation-panel ${disruptionCount > 0 ? 'no-safe-option' : 'not-needed'}`}>
+        <div><p className="section-kicker">Next decision</p><h3>{disruptionCount > 0 ? 'No safe automatic replacement was found' : 'No mitigation is needed'}</h3><p>{disruptionCount > 0 ? 'RoleImpact evaluated the active members in this draft but none can restore coverage without failing an eligibility or safety rule.' : 'The tested change does not reduce workflow coverage below its configured target.'}</p></div>
+        {result.excludedCandidateReasons.length > 0 ? <CandidateExclusions result={result} /> : null}
+      </section>
+    )
+  }
+
+  return (
+    <section className="draft-mitigation-panel" aria-labelledby="draft-mitigation-title">
+      <div className="draft-mitigation-heading"><div><p className="section-kicker">Step 3</p><h3 id="draft-mitigation-title">Test a safe replacement</h3><p>These options come from the same deterministic eligibility and workflow rules used by the impact test.</p></div><span>{result.recommendations.length} safe option{result.recommendations.length === 1 ? '' : 's'}</span></div>
+      <div className="draft-recommendation-list">
+        {result.recommendations.map((recommendation) => {
+          const tested = mitigation?.changeSet.replacementEmployee?.id === recommendation.candidate.id
+          return (
+            <article className={`draft-recommendation-card ${tested ? 'tested' : ''}`} key={recommendation.id}>
+              <span className="draft-recommendation-rank">{String(recommendation.rank).padStart(2, '0')}</span>
+              <div><strong>Assign {recommendation.role.name} to {recommendation.candidate.name}</strong><p>This restores {formatEntityNames(recommendation.restoredWorkflowSteps)} with {recommendation.gainedPermissions.length} additional effective permission{recommendation.gainedPermissions.length === 1 ? '' : 's'}.</p><div className="draft-recommendation-evidence">{recommendation.evidence.map((evidence) => <span key={evidence}>{evidenceLabel(evidence)}</span>)}</div></div>
+              <button type="button" disabled={isPending} onClick={() => onTest(recommendation.candidate.id)}>{isPending ? 'Testing mitigation…' : tested ? 'Test mitigation again' : 'Test this mitigation'}</button>
+            </article>
+          )
+        })}
+      </div>
+      {error ? <p className="form-error" role="alert">{error.message}</p> : null}
+      {result.excludedCandidateReasons.length > 0 ? <CandidateExclusions result={result} /> : null}
+    </section>
+  )
+}
+
+function CandidateExclusions({ result }: { result: DraftImpactResult }) {
+  return (
+    <details className="draft-candidate-exclusions"><summary>Why other members were not recommended</summary><div>{result.excludedCandidateReasons.map((exclusion) => <p key={exclusion.candidate.id}><strong>{exclusion.candidate.name}:</strong> {exclusion.reasons.map((reason) => reason.detail).join(' ')}</p>)}</div></details>
   )
 }
 
@@ -137,6 +266,30 @@ function ImpactResultSummary({ result, requirementName }: { result: DraftImpactR
       <div className="impact-preview-counts"><article><strong>{result.executiveSummary.workflowsBlocked}</strong><span>blocked</span></article><article><strong>{result.executiveSummary.workflowsDegraded}</strong><span>degraded</span></article><article><strong>{result.executiveSummary.permissionsLost}</strong><span>permissions lost</span></article></div>
     </section>
   )
+}
+
+function outcomeCount(result: DraftImpactResult) {
+  const blocked = result.executiveSummary.workflowsBlocked
+  const degraded = result.executiveSummary.workflowsDegraded
+  if (blocked > 0) return `${blocked} blocked`
+  if (degraded > 0) return `${degraded} degraded`
+  return 'Coverage restored'
+}
+
+function formatEntityNames(entities: Array<{ name: string }>) {
+  if (entities.length === 0) return 'the affected workflow'
+  return formatNames(entities.map((entity) => entity.name))
+}
+
+function evidenceLabel(evidence: DraftImpactResult['recommendations'][number]['evidence'][number]) {
+  return {
+    ACTIVE_EMPLOYEE: 'Active member',
+    EXISTING_RELEVANT_APPLICATION_ACCESS: 'Relevant access exists',
+    AFFECTED_STEP_CONSTRAINTS_SATISFIED: 'Step rules satisfied',
+    DIFFERENT_ACTORS_SATISFIED: 'Separation maintained',
+    WORSENED_WORKFLOWS_RESTORED: 'Coverage restored',
+    NO_WORKFLOW_WORSENED: 'No new disruption',
+  }[evidence]
 }
 
 function EmptyImpact({ title, message, action, onAction, warning = false }: { title: string; message: string; action: string; onAction: () => void; warning?: boolean }) {

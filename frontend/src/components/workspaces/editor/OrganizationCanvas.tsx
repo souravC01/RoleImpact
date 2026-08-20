@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type DragEvent, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Background,
@@ -32,11 +32,21 @@ import {
   type DraftCatalog,
   type DraftMember,
 } from '../../../api/draftCatalog'
+import FullOrganizationImpactCanvas, { type FullOrganizationImpactCanvasProps } from './FullOrganizationImpactCanvas'
 
 type EntityType = 'team' | 'member' | 'role' | 'workflow'
 type GraphEntityType = EntityType | 'responsibility'
-type CanvasNodeData = { label: string; entityType: GraphEntityType; detail: string; emphasis?: 'highlighted' | 'dimmed' }
-type CanvasNode = Node<CanvasNodeData, 'organization'>
+export type OrganizationSimulationState = 'source' | 'candidate' | 'unsafe' | 'removed' | 'blocked' | 'degraded' | 'restored'
+export type CanvasNodeData = {
+  label: string
+  entityType: GraphEntityType
+  detail: string
+  emphasis?: 'highlighted' | 'dimmed'
+  simulationState?: OrganizationSimulationState
+  badge?: string
+  onImpactActions?: (event: ReactMouseEvent<HTMLButtonElement>) => void
+}
+export type CanvasNode = Node<CanvasNodeData, 'organization'>
 type PendingCreate = { entityType: EntityType; position?: XYPosition }
 type QuickCreateOptions = {
   department: string
@@ -66,6 +76,25 @@ export default function OrganizationCanvas(props: {
   return (
     <ReactFlowProvider>
       <OrganizationCanvasInner {...props} />
+    </ReactFlowProvider>
+  )
+}
+
+export function OrganizationImpactCanvas(props: FullOrganizationImpactCanvasProps) {
+  const baseNodes = useMemo(() => buildNodes(props.catalog, props.workspaceId), [props.catalog, props.workspaceId])
+  const baseEdges = useMemo(() => buildEdges(props.catalog), [props.catalog])
+  const baseFocusIds = useMemo(() => focusedNodeIds(props.catalog, props.workflowId), [props.catalog, props.workflowId])
+  const getRelatedPathIds = useCallback((selectedNodeId: string) => relatedPathIds(props.catalog, selectedNodeId), [props.catalog])
+  return (
+    <ReactFlowProvider>
+      <FullOrganizationImpactCanvas
+        {...props}
+        baseNodes={baseNodes}
+        baseEdges={baseEdges}
+        baseFocusIds={baseFocusIds}
+        nodeTypes={nodeTypes}
+        getRelatedPathIds={getRelatedPathIds}
+      />
     </ReactFlowProvider>
   )
 }
@@ -428,10 +457,12 @@ function DeleteConfirmation({ node, catalog, isPending, error, onCancel, onConfi
 
 function OrganizationNode({ data, selected }: NodeProps<CanvasNode>) {
   return (
-    <div className={`organization-node ${data.entityType} ${selected ? 'selected' : ''} ${data.emphasis ?? ''}`}>
+    <div className={`organization-node ${data.entityType} ${selected ? 'selected' : ''} ${data.emphasis ?? ''} ${data.simulationState ? `simulation-${data.simulationState}` : ''} ${data.onImpactActions ? 'has-impact-actions' : ''}`}>
       <Handle type="target" position={Position.Left} />
       <span className="organization-node-icon" aria-hidden="true">{entityIcon(data.entityType)}</span>
       <span><small>{typeLabels[data.entityType]}</small><strong>{data.label}</strong><em>{data.detail}</em></span>
+      {data.badge ? <b className="organization-node-badge">{data.badge}</b> : null}
+      {data.onImpactActions ? <button type="button" className="organization-node-impact-actions nodrag nopan" aria-label={`Impact actions for ${data.label}`} title="Impact actions" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); data.onImpactActions?.(event) }}>•••</button> : null}
       <Handle type="source" position={Position.Right} />
     </div>
   )

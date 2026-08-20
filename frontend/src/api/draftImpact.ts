@@ -1,6 +1,10 @@
 import type { Simulation } from './simulations'
 
-export type DraftImpactResult = Simulation['result']
+export type DraftImpactResult = Simulation['result'] & Pick<Simulation, 'organizationId' | 'baselineVersion'>
+export type DraftMitigationPreview = {
+  original: DraftImpactResult
+  mitigation: DraftImpactResult
+}
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -20,4 +24,23 @@ export async function runDraftImpactPreview(
     throw new Error(error?.message ?? 'The impact preview could not be generated')
   }
   return response.json() as Promise<DraftImpactResult>
+}
+
+export async function runDraftMitigationPreview(
+  workspaceId: string,
+  memberId: string,
+  roleId: string,
+  replacementMemberId: string,
+): Promise<DraftMitigationPreview> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/workspaces/${workspaceId}/impact-previews/mitigations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memberId, roleId, replacementMemberId }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null) as { message?: string } | null
+    throw new Error(error?.message ?? 'The mitigation preview could not be generated')
+  }
+  return response.json() as Promise<DraftMitigationPreview>
 }
