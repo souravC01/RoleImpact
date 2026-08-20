@@ -145,4 +145,3 @@ Run focused tests, full frontend tests, lint, build, backend unit tests, and bac
 - [ ] **Step 9: Commit Task 2**
 
 Commit with subject `refactor: synchronize role holders atomically`.
-

@@ -54,4 +54,3 @@ Remove the two correctness risks approved before MVP completion:
 - Add PostgreSQL integration coverage for the endpoint and transactional holder replacement; compilation must succeed even if Docker is unavailable locally.
 - Frontend tests must prove that server-supplied continuity statuses drive labels and that catalog mutations invalidate the projection.
 - Run frontend tests, lint, and build; run backend unit tests and test compilation. Run PostgreSQL integration tests when Docker is available.
-
