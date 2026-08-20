@@ -1,13 +1,16 @@
 package com.roleimpact.workspace.preview.api;
 
 import java.util.UUID;
+import java.util.List;
 
 import com.roleimpact.impactengine.ImpactResult;
+import com.roleimpact.workspace.preview.application.DraftContinuityProjectionService;
 import com.roleimpact.workspace.preview.application.DraftImpactPreviewService;
 
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,9 +21,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class DraftImpactPreviewController {
 
 	private final DraftImpactPreviewService service;
+	private final DraftContinuityProjectionService continuityProjectionService;
 
-	public DraftImpactPreviewController(DraftImpactPreviewService service) {
+	public DraftImpactPreviewController(
+			DraftImpactPreviewService service,
+			DraftContinuityProjectionService continuityProjectionService) {
 		this.service = service;
+		this.continuityProjectionService = continuityProjectionService;
+	}
+
+	@GetMapping("/continuity")
+	public List<DraftContinuityRiskResource> continuity(@PathVariable UUID workspaceId) {
+		return continuityProjectionService.project(workspaceId);
 	}
 
 	@PostMapping
