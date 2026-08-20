@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { DraftCatalog } from './api/draftCatalog'
-import type { DraftImpactResult, DraftMitigationPreview } from './api/draftImpact'
+import type { DraftContinuityRisk, DraftImpactResult, DraftMitigationPreview } from './api/draftImpact'
 import type { Simulation } from './api/simulations'
 
 afterEach(() => {
@@ -158,11 +158,16 @@ describe('App', () => {
   it('builds a blank draft through teams, members, workflows, impact testing, and shared roles', async () => {
     const user = userEvent.setup()
     let catalog: DraftCatalog = structuredClone(blankCatalogFixture)
+    let continuityRequests = 0
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = input.toString()
       if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
       if (url.endsWith('/api/v1/workspaces') && init?.method === 'POST') return jsonResponse(blankWorkspaceFixture, 201)
       if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) {
+        continuityRequests += 1
+        return jsonResponse(catalog.workflows.length === 0 ? [] : customDraftContinuityFixture)
+      }
       if (url.endsWith('/catalog/teams') && init?.method === 'POST') {
         const input = JSON.parse(String(init.body)) as { name: string; department: string }
         catalog = { ...catalog, teams: [{ id: 'team-1', name: input.name, department: input.department, memberCount: 0 }] }
@@ -252,8 +257,10 @@ describe('App', () => {
     await user.type(screen.getByLabelText('Workflow name'), 'Production Deployment')
     await user.selectOptions(screen.getByLabelText('Business criticality'), 'CRITICAL')
     await user.type(screen.getByLabelText('Responsibility or step'), 'Release Manager responsibility')
+    const continuityRequestsBeforeWorkflow = continuityRequests
     await user.click(screen.getByRole('button', { name: 'Create workflow' }))
     expect(await screen.findByText(/CRITICAL · 1 role responsibilities/)).toBeInTheDocument()
+    expect(continuityRequests).toBeGreaterThan(continuityRequestsBeforeWorkflow)
     await user.click(screen.getByRole('button', { name: 'Organization map' }))
     expect(screen.getByLabelText('Organization inventory')).toHaveTextContent('Production Deployment')
     expect(screen.getByLabelText('Organization relationship canvas')).toBeInTheDocument()
@@ -307,10 +314,10 @@ describe('App', () => {
     const selectedMaya = screen.getByLabelText('Selected Member Maya Singh')
     expect(selectedMaya).toHaveTextContent('Connected workflows')
     await user.click(within(selectedMaya).getByRole('button', { name: 'Test losing Release Manager' }))
-    expect(await screen.findByText('This responsibility is now blocked')).toBeInTheDocument()
-    expect(screen.getByText(/Maya Singh was the only eligible holder/)).toBeInTheDocument()
+    expect(await screen.findAllByText('This workflow would be blocked')).not.toHaveLength(0)
+    expect(screen.getByText(/the impact engine finds 2 eligible actors/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Production Deployment.*would block/ }))
-    expect(screen.getByText('This responsibility is now blocked')).toBeInTheDocument()
+    expect(screen.getAllByText('This workflow would be blocked')).not.toHaveLength(0)
     expect(await screen.findByRole('heading', { name: 'A workflow would be blocked' })).toBeInTheDocument()
     expect(screen.getByLabelText('Complete organization impact map')).toBeInTheDocument()
     expect(screen.getByLabelText(/member Arjun Mehta.*Recommended #1/i)).toBeInTheDocument()
@@ -732,6 +739,36 @@ const customDraftImpactFixture: DraftImpactResult = {
   ],
   excludedCandidateReasons: [],
 }
+
+const customDraftContinuityFixture: DraftContinuityRisk[] = [
+  {
+    key: 'workflow-1:requirement-1:role-1',
+    workflowId: 'workflow-1',
+    workflowName: 'Production Deployment',
+    criticality: 'CRITICAL',
+    requirementId: 'requirement-1',
+    requirementName: 'Release Manager responsibility',
+    minimumActors: 1,
+    resilienceTarget: 1,
+    roleId: 'role-1',
+    roleName: 'Release Manager',
+    // The supplied BLOCKED verdict is authoritative even with two baseline actors.
+    eligibleMembers: [
+      { id: 'member-1', name: 'Maya Singh' },
+      { id: 'member-2', name: 'Arjun Mehta' },
+    ],
+    members: [
+      {
+        id: 'member-1',
+        name: 'Maya Singh',
+        eligible: true,
+        losesCoverage: false,
+        remainingEligibleActorCount: 2,
+        scenarioStatus: 'BLOCKED',
+      },
+    ],
+  },
+]
 
 const customDraftMitigationPreviewFixture: DraftMitigationPreview = {
   original: customDraftImpactFixture,

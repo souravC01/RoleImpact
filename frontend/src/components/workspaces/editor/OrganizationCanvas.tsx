@@ -157,6 +157,7 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
     mutationFn: async (connection: Connection) => connectEntities(workspaceId, catalog, connection),
     onSuccess: (nextCatalog) => {
       queryClient.setQueryData(['draft-catalog', workspaceId], nextCatalog)
+      void queryClient.invalidateQueries({ queryKey: ['draft-continuity', workspaceId] })
       setNotice('Relationship saved')
     },
     onError: (error: Error) => setNotice(error.message),
@@ -165,6 +166,7 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
     mutationFn: (node: CanvasNode) => deleteEntity(workspaceId, node, catalog),
     onSuccess: (nextCatalog, node) => {
       queryClient.setQueryData(['draft-catalog', workspaceId], nextCatalog)
+      void queryClient.invalidateQueries({ queryKey: ['draft-continuity', workspaceId] })
       removeSavedPosition(workspaceId, node.id)
       setSelectedNodeId(null)
       setPendingDelete(null)
@@ -343,6 +345,7 @@ function OrganizationCanvasInner({ workspaceId, catalog, initialFocus, onOpenInv
               localStorage.setItem(positionKey(workspaceId), JSON.stringify(positions))
             }
             queryClient.setQueryData(['draft-catalog', workspaceId], nextCatalog)
+            void queryClient.invalidateQueries({ queryKey: ['draft-continuity', workspaceId] })
             setSelectedNodeId(null)
             setPendingCreate(null)
             setNotice(successMessage ?? `${typeLabels[pendingCreate.entityType]} created`)

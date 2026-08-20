@@ -344,6 +344,13 @@ class WorkspaceIntegrationTest {
 				.andExpect(jsonPath("$.mitigation.overallSeverity").value("CRITICAL"))
 				.andExpect(jsonPath("$.mitigation.executiveSummary.workflowsBlocked").value(1));
 
+		mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/impact-previews/continuity", workspaceId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.workflowName == 'Production Deployment' && @.requirementName == 'Approve production release')].eligibleMembers[0].id")
+						.value(memberId.toString()))
+				.andExpect(jsonPath("$[?(@.workflowName == 'Production Deployment' && @.requirementName == 'Approve production release')].members[0].scenarioStatus")
+						.value("BLOCKED"));
+
 		var catalogAfterMitigation = mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/catalog", workspaceId))
 				.andExpect(status().isOk())
 				.andReturn();

@@ -6,7 +6,38 @@ export type DraftMitigationPreview = {
   mitigation: DraftImpactResult
 }
 
+export type DraftContinuityEligibleMember = { id: string; name: string }
+export type DraftContinuityRiskMember = DraftContinuityEligibleMember & {
+  eligible: boolean
+  losesCoverage: boolean
+  remainingEligibleActorCount: number
+  scenarioStatus: 'OPERATIONAL' | 'DEGRADED' | 'BLOCKED'
+}
+export type DraftContinuityRisk = {
+  key: string
+  workflowId: string
+  workflowName: string
+  criticality: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  requirementId: string
+  requirementName: string
+  minimumActors: number
+  resilienceTarget: number
+  roleId: string
+  roleName: string
+  eligibleMembers: DraftContinuityEligibleMember[]
+  members: DraftContinuityRiskMember[]
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+
+export async function fetchDraftContinuityRisks(workspaceId: string, signal?: AbortSignal): Promise<DraftContinuityRisk[]> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/workspaces/${workspaceId}/impact-previews/continuity`, { signal })
+  if (!response.ok) {
+    const error = await response.json().catch(() => null) as { message?: string } | null
+    throw new Error(error?.message ?? 'The continuity projection could not be loaded')
+  }
+  return response.json() as Promise<DraftContinuityRisk[]>
+}
 
 export async function runDraftImpactPreview(
   workspaceId: string,

@@ -18,7 +18,7 @@ import {
   type DraftCatalog,
   type DraftMember,
 } from '../../../api/draftCatalog'
-import { findWorkflowRisks } from './workflowRisks'
+import { fetchDraftContinuityRisks } from '../../../api/draftImpact'
 
 const OrganizationCanvas = lazy(() => import('./OrganizationCanvas'))
 const DraftImpactTesting = lazy(() => import('./DraftImpactTesting'))
@@ -32,6 +32,10 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
   const catalogQuery = useQuery({
     queryKey: ['draft-catalog', workspaceId],
     queryFn: ({ signal }) => fetchDraftCatalog(workspaceId, signal),
+  })
+  const continuityQuery = useQuery({
+    queryKey: ['draft-continuity', workspaceId],
+    queryFn: ({ signal }) => fetchDraftContinuityRisks(workspaceId, signal),
   })
 
   if (catalogQuery.isPending) return <p className="editor-state">Loading the draft catalog…</p>
@@ -51,9 +55,8 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
     { label: 'roles', value: catalog.roles.length },
     { label: 'workflows', value: catalog.workflows.length },
   ]
-  const singlePointRisks = findWorkflowRisks(catalog).filter((risk) =>
-    risk.eligibleMembers.length > 0 && risk.eligibleMembers.length === risk.minimumActors,
-  )
+  const continuityRisks = continuityQuery.data ?? []
+  const singlePointRisks = continuityRisks.filter((risk) => risk.members.some((member) => member.scenarioStatus === 'BLOCKED'))
 
   function moveToStage(nextStage: EditorStage) {
     setStage(nextStage)
@@ -86,7 +89,7 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
         ))}
       </div>
 
-      {view === 'map' && singlePointRisks.length > 0 ? (
+      {view === 'map' && !continuityQuery.isFetching && !continuityQuery.isError && singlePointRisks.length > 0 ? (
         <section className="risk-callout" aria-label="Continuity risks found">
           <span aria-hidden="true">!</span>
           <div><strong>{singlePointRisks.length} critical coverage gap{singlePointRisks.length === 1 ? '' : 's'} found</strong><p>{singlePointRisks[0].eligibleMembers.map((member) => member.name).join(', ')} provide the minimum coverage for {singlePointRisks[0].requirementName} in {singlePointRisks[0].workflowName}.</p></div>
@@ -97,7 +100,7 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
       {view === 'map' ? (
         <Suspense fallback={<p className="editor-state">Opening the organization map…</p>}><OrganizationCanvas workspaceId={workspaceId} catalog={catalog} initialFocus={isTemplateClone} onOpenInventory={() => openInventory()} onOpenWorkflows={() => openInventory('workflows')} onTestImpact={() => setView('impact')} /></Suspense>
       ) : view === 'impact' ? (
-        <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} onBackToMap={() => setView('map')} /></Suspense>
+        <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} risks={continuityRisks} isContinuityLoading={continuityQuery.isFetching} continuityError={continuityQuery.error} onRetryContinuity={() => void continuityQuery.refetch()} onBackToMap={() => setView('map')} /></Suspense>
       ) : (
         <>
           <nav className="editor-stages" aria-label="Catalog builder stages">
@@ -399,6 +402,7 @@ function useCatalogMutation<T>(workspaceId: string, mutationFn: (input: T) => Pr
     mutationFn,
     onSuccess: (catalog) => {
       queryClient.setQueryData(['draft-catalog', workspaceId], catalog)
+      void queryClient.invalidateQueries({ queryKey: ['draft-continuity', workspaceId] })
       onSuccess?.()
     },
   })
