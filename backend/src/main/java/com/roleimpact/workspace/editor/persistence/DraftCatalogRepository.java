@@ -280,6 +280,23 @@ public class DraftCatalogRepository {
 				.param("workspaceId", workspaceId).param("roleIds", roleIds).query(Integer.class).single();
 	}
 
+	public int countMatchingMembers(UUID workspaceId, Set<UUID> memberIds) {
+		if (memberIds.isEmpty()) return 0;
+		return jdbcClient.sql("SELECT COUNT(*) FROM employees WHERE organization_id = :workspaceId AND id IN (:memberIds)")
+				.param("workspaceId", workspaceId).param("memberIds", memberIds).query(Integer.class).single();
+	}
+
+	public void replaceRoleHolders(UUID roleId, Set<UUID> memberIds) {
+		jdbcClient.sql("DELETE FROM employee_roles WHERE role_id = :roleId")
+				.param("roleId", roleId).update();
+		for (UUID memberId : memberIds) {
+			jdbcClient.sql("""
+					INSERT INTO employee_roles (employee_id, role_id, assigned_at, assigned_by)
+					VALUES (:memberId, :roleId, CURRENT_TIMESTAMP, 'workspace editor')
+					""").param("memberId", memberId).param("roleId", roleId).update();
+		}
+	}
+
 	public void replaceAssignments(UUID memberId, Set<UUID> roleIds) {
 		jdbcClient.sql("DELETE FROM employee_roles WHERE employee_id = :memberId").param("memberId", memberId).update();
 		for (UUID roleId : roleIds) {

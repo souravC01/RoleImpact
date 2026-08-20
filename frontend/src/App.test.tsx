@@ -155,6 +155,47 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /Teams/ })).toHaveAttribute('aria-current', 'step')
   })
 
+  it('creates an inventory role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    let catalog: DraftCatalog = structuredClone(clonedCatalogFixture)
+    const roleRequests: Array<{ holderMemberIds?: string[] }> = []
+    const memberRoleRequests: string[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse([])
+      if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
+        const role = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null; holderMemberIds?: string[] }
+        roleRequests.push(role)
+        catalog = applyRoleHolders({
+          ...catalog,
+          roles: [...catalog.roles, { id: 'role-release', name: role.name, description: role.description, sensitivity: role.sensitivity, ownerMemberId: role.ownerMemberId, memberCount: 0 }],
+        }, 'role-release', role.holderMemberIds)
+        return jsonResponse(catalog)
+      }
+      if (url.match(/\/members\/[^/]+\/roles$/) && init?.method === 'PUT') {
+        memberRoleRequests.push(url)
+        return jsonResponse(catalog)
+      }
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Detailed inventory' }))
+    await user.click(screen.getByRole('button', { name: /Roles/ }))
+    await user.type(screen.getByLabelText('Role name'), 'Release Manager')
+    await user.type(screen.getByLabelText('Description'), 'Approves production releases')
+    await user.click(screen.getByRole('checkbox', { name: 'Priya Sharma' }))
+    await user.click(screen.getByRole('button', { name: 'Add shared role & continue' }))
+
+    expect((await screen.findAllByText(/Release Manager/)).length).toBeGreaterThan(0)
+    expect(roleRequests).toEqual([expect.objectContaining({ holderMemberIds: ['member-priya'] })])
+    expect(memberRoleRequests).toEqual([])
+  })
+
   it('opens impact testing after a deferred continuity projection resolves', async () => {
     const user = userEvent.setup()
     const projection = deferred<Response>()
@@ -210,6 +251,8 @@ describe('App', () => {
     const user = userEvent.setup()
     let catalog: DraftCatalog = structuredClone(blankCatalogFixture)
     let continuityRequests = 0
+    const roleRequests: Array<{ method: string; body: { holderMemberIds?: string[] } }> = []
+    const memberRoleRequests: string[] = []
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = input.toString()
       if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
@@ -232,8 +275,9 @@ describe('App', () => {
         return jsonResponse(catalog)
       }
       if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
-        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity'] }
-        catalog = { ...catalog, roles: [{ id: 'role-1', name: input.name, description: input.description, sensitivity: input.sensitivity, ownerMemberId: null, memberCount: 0 }] }
+        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null; holderMemberIds?: string[] }
+        roleRequests.push({ method: 'POST', body: input })
+        catalog = applyRoleHolders({ ...catalog, roles: [{ id: 'role-1', name: input.name, description: input.description, sensitivity: input.sensitivity, ownerMemberId: input.ownerMemberId, memberCount: 0 }] }, 'role-1', input.holderMemberIds)
         return jsonResponse(catalog)
       }
       if (url.endsWith('/catalog/members/member-1') && init?.method === 'PUT') {
@@ -242,12 +286,14 @@ describe('App', () => {
         return jsonResponse(catalog)
       }
       if (url.endsWith('/catalog/roles/role-1') && init?.method === 'PUT') {
-        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null }
-        catalog = { ...catalog, roles: [{ ...catalog.roles[0], ...input }] }
+        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null; holderMemberIds?: string[] }
+        roleRequests.push({ method: 'PUT', body: input })
+        catalog = applyRoleHolders({ ...catalog, roles: [{ ...catalog.roles[0], ...input }] }, 'role-1', input.holderMemberIds)
         return jsonResponse(catalog)
       }
       if (url.match(/\/members\/[^/]+\/roles$/) && init?.method === 'PUT') {
         const memberId = url.match(/\/members\/([^/]+)\/roles$/)![1]
+        memberRoleRequests.push(memberId)
         const input = JSON.parse(String(init.body)) as { roleIds: string[] }
         const members = catalog.members.map((member) => member.id === memberId ? { ...member, roleIds: input.roleIds } : member)
         const roles = catalog.roles.map((role) => ({ ...role, memberCount: members.filter((member) => member.roleIds.includes(role.id)).length }))
@@ -300,6 +346,8 @@ describe('App', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Maya Singh' }))
     await user.click(screen.getByRole('button', { name: 'Create role' }))
     expect(await screen.findByText('Role created')).toBeInTheDocument()
+    expect(roleRequests).toContainEqual({ method: 'POST', body: expect.objectContaining({ holderMemberIds: ['member-1'] }) })
+    expect(memberRoleRequests).toHaveLength(0)
 
     expect(within(screen.getByLabelText('Organization inventory')).queryByRole('button', { name: 'Delete object' })).not.toBeInTheDocument()
 
@@ -397,6 +445,8 @@ describe('App', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Arjun Mehta' }))
     await user.click(screen.getByRole('button', { name: 'Assign existing role' }))
     expect(await screen.findByText('Role assigned')).toBeInTheDocument()
+    expect(roleRequests).toContainEqual({ method: 'PUT', body: expect.objectContaining({ holderMemberIds: ['member-1', 'member-2'] }) })
+    expect(memberRoleRequests).toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: 'Detailed inventory' }))
     await user.click(screen.getByRole('button', { name: /Members/ }))
@@ -410,6 +460,7 @@ describe('App', () => {
     const mayaNode = screen.getByLabelText('Member Maya Singh').closest('.react-flow__node')
     const arjunNode = screen.getByLabelText('Member Arjun Mehta').closest('.react-flow__node')
     expect(mayaNode?.getAttribute('style')).not.toEqual(arjunNode?.getAttribute('style'))
+    const memberRoleRequestsBeforeRoleEdit = memberRoleRequests.length
     await user.click(screen.getByRole('button', { name: 'Detailed inventory' }))
     await user.click(screen.getByRole('button', { name: /Roles/ }))
     expect(await screen.findByText(/2 holders/)).toBeInTheDocument()
@@ -418,6 +469,9 @@ describe('App', () => {
     await user.selectOptions(screen.getByLabelText('Sensitivity'), 'CRITICAL')
     await user.click(screen.getByRole('button', { name: 'Save role and holders' }))
     expect(await screen.findByText(/CRITICAL · 2 holders/)).toBeInTheDocument()
+    expect(roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(2)
+    expect(roleRequests.at(-1)).toEqual({ method: 'PUT', body: expect.objectContaining({ holderMemberIds: ['member-1', 'member-2'] }) })
+    expect(memberRoleRequests).toHaveLength(memberRoleRequestsBeforeRoleEdit)
   }, 15000)
 })
 
@@ -426,6 +480,22 @@ function jsonResponse(value: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+function applyRoleHolders(catalog: DraftCatalog, roleId: string, holderMemberIds?: string[]) {
+  if (holderMemberIds === undefined) return catalog
+  const holderIds = new Set(holderMemberIds)
+  const members = catalog.members.map((member) => ({
+    ...member,
+    roleIds: holderIds.has(member.id)
+      ? [...new Set([...member.roleIds, roleId])]
+      : member.roleIds.filter((id) => id !== roleId),
+  }))
+  return {
+    ...catalog,
+    members,
+    roles: catalog.roles.map((role) => ({ ...role, memberCount: members.filter((member) => member.roleIds.includes(role.id)).length })),
+  }
 }
 
 const workspaceFixture = [

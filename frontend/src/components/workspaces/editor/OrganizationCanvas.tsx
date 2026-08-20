@@ -29,6 +29,7 @@ import {
   deleteQuickWorkflow,
   replaceMemberRoles,
   updateDraftMember,
+  updateDraftRole,
   type DraftCatalog,
   type DraftMember,
 } from '../../../api/draftCatalog'
@@ -396,6 +397,10 @@ function QuickCreate({ workspaceId, catalog, pending, onCancel, onCreated }: {
 
   const relationshipOptions = parentOptions(pending.entityType, catalog)
   const existingEntity = findExistingEntity(pending.entityType, name, catalog)
+  useEffect(() => {
+    if (pending.entityType !== 'role' || !existingEntity || !('memberCount' in existingEntity)) return
+    setSelectedMemberIds(catalog.members.filter((member) => member.roleIds.includes(existingEntity.id)).map((member) => member.id))
+  }, [catalog.members, existingEntity, pending.entityType])
   const roleAlreadyRequired = pending.entityType === 'workflow' && existingEntity && 'requirements' in existingEntity
     ? existingEntity.requirements.some((requirement) => requirement.roleIds.includes(parentId))
     : false
@@ -725,13 +730,18 @@ async function createEntity(workspaceId: string, entityType: EntityType, name: s
   if (entityType === 'role') {
     const existingRole = catalog.roles.find((role) => normalizedName(role.name) === normalizedName(name))
     if (existingRole) {
-      const next = await assignRoleToMembers(workspaceId, catalog, existingRole.id, selectedMemberIds)
+      const next = await updateDraftRole(workspaceId, existingRole.id, {
+        name: existingRole.name,
+        description: existingRole.description,
+        sensitivity: existingRole.sensitivity,
+        ownerMemberId: existingRole.ownerMemberId,
+        holderMemberIds: selectedMemberIds,
+      })
       return { catalog: next, nodeId: nodeId('role', existingRole.id) }
     }
-    const created = await createDraftRole(workspaceId, { name, description: `${name} responsibilities`, sensitivity: options.sensitivity, ownerMemberId: null })
+    const created = await createDraftRole(workspaceId, { name, description: `${name} responsibilities`, sensitivity: options.sensitivity, ownerMemberId: null, holderMemberIds: selectedMemberIds })
     const roleId = findCreatedId(catalog.roles, created.roles)
-    const next = await assignRoleToMembers(workspaceId, created, roleId, selectedMemberIds)
-    return { catalog: next, nodeId: nodeId('role', roleId) }
+    return { catalog: created, nodeId: nodeId('role', roleId) }
   }
   const existingWorkflow = catalog.workflows.find((workflow) => normalizedName(workflow.name) === normalizedName(name))
   const role = catalog.roles.find((candidate) => candidate.id === parentId)
@@ -743,16 +753,6 @@ async function createEntity(workspaceId: string, entityType: EntityType, name: s
   }
   const next = await createQuickWorkflow(workspaceId, { name, criticality: options.criticality, requirementName, roleId: parentId, minimumActors: 1, resilienceTarget: 1 })
   return { catalog: next, nodeId: nodeId('workflow', findCreatedId(catalog.workflows, next.workflows)) }
-}
-
-async function assignRoleToMembers(workspaceId: string, catalog: DraftCatalog, roleId: string, memberIds: string[]) {
-  const selected = new Set(memberIds)
-  let latest = catalog
-  for (const member of catalog.members) {
-    if (!selected.has(member.id) || member.roleIds.includes(roleId)) continue
-    latest = await replaceMemberRoles(workspaceId, member.id, [...member.roleIds, roleId])
-  }
-  return latest
 }
 
 function findExistingEntity(entityType: EntityType, name: string, catalog: DraftCatalog) {
