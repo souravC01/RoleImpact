@@ -76,6 +76,52 @@ class DraftContinuityProjectionServiceTest {
 	}
 
 	@Test
+	void ordersEveryRequirementAndRoleWithinAWorkflow() {
+		var repository = mock(DraftCatalogRepository.class);
+		var snapshots = mock(OrganizationSnapshotAssembler.class);
+		var snapshot = mock(OrganizationSnapshot.class);
+		when(repository.findWorkspaceStatus(WORKSPACE_ID)).thenReturn(java.util.Optional.of("DRAFT"));
+		when(repository.findCatalog(WORKSPACE_ID)).thenReturn(new DraftCatalogResource(
+				WORKSPACE_ID,
+				List.of(),
+				List.of(
+						member(ZOE_ID, "Zoe Holder", ZULU_ROLE_ID),
+						member(ALPHA_HOLDER_ID, "Alpha Holder", ALPHA_ROLE_ID)),
+				List.of(
+						role(ZULU_ROLE_ID, "Zulu role"),
+						role(ALPHA_ROLE_ID, "Alpha role")),
+				List.of(new DraftCatalogResource.WorkflowItem(
+						ALPHA_WORKFLOW_ID,
+						"Alpha workflow",
+						"HIGH",
+						List.of(
+								new DraftCatalogResource.WorkflowRequirementItem(
+										ZULU_STEP_ID, "Zulu requirement", 2, 1, 2,
+										"Finance", "EUROPE", "NIGHT", Set.of(ZULU_ROLE_ID, ALPHA_ROLE_ID)),
+								new DraftCatalogResource.WorkflowRequirementItem(
+										ALPHA_STEP_ID, "Alpha requirement", 1, 1, 2,
+										"Finance", "EUROPE", "NIGHT", Set.of(ZULU_ROLE_ID, ALPHA_ROLE_ID))),
+						true))));
+		when(snapshots.assemble(WORKSPACE_ID)).thenReturn(snapshot);
+		ImpactEngine engine = (baseline, change) -> result(new WorkflowImpact(
+				ALPHA_WORKFLOW_ID, "Alpha workflow", WorkflowCriticality.HIGH,
+				ImpactResult.WorkflowStatus.OPERATIONAL, ImpactResult.WorkflowStatus.OPERATIONAL,
+				List.of(
+						step(ZULU_STEP_ID, "Zulu requirement", List.of(), List.of()),
+						step(ALPHA_STEP_ID, "Alpha requirement", List.of(), List.of())),
+				List.of()));
+
+		var risks = new DraftContinuityProjectionService(repository, snapshots, engine).project(WORKSPACE_ID);
+
+		assertThat(risks).extracting(risk -> risk.requirementName() + ":" + risk.roleName())
+				.containsExactly(
+						"Alpha requirement:Alpha role",
+						"Alpha requirement:Zulu role",
+						"Zulu requirement:Alpha role",
+						"Zulu requirement:Zulu role");
+	}
+
+	@Test
 	void rejectsPublishedAndUnknownWorkspacesBeforeProjecting() {
 		var repository = mock(DraftCatalogRepository.class);
 		var snapshots = mock(OrganizationSnapshotAssembler.class);

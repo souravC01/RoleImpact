@@ -57,6 +57,8 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
   ]
   const continuityRisks = continuityQuery.data ?? []
   const singlePointRisks = continuityRisks.filter((risk) => risk.members.some((member) => member.scenarioStatus === 'BLOCKED'))
+  const firstBlockedRisk = singlePointRisks[0]
+  const firstBlockedMember = firstBlockedRisk?.members.find((member) => member.scenarioStatus === 'BLOCKED')
 
   function moveToStage(nextStage: EditorStage) {
     setStage(nextStage)
@@ -89,10 +91,10 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
         ))}
       </div>
 
-      {view === 'map' && !continuityQuery.isFetching && !continuityQuery.isError && singlePointRisks.length > 0 ? (
+      {view === 'map' && !continuityQuery.isFetching && !continuityQuery.isError && firstBlockedRisk && firstBlockedMember ? (
         <section className="risk-callout" aria-label="Continuity risks found">
           <span aria-hidden="true">!</span>
-          <div><strong>{singlePointRisks.length} critical coverage gap{singlePointRisks.length === 1 ? '' : 's'} found</strong><p>{singlePointRisks[0].eligibleMembers.map((member) => member.name).join(', ')} provide the minimum coverage for {singlePointRisks[0].requirementName} in {singlePointRisks[0].workflowName}.</p></div>
+          <div><strong>{singlePointRisks.length} critical coverage gap{singlePointRisks.length === 1 ? '' : 's'} found</strong><p>According to the impact engine, removing {firstBlockedRisk.roleName} from {firstBlockedMember.name} would block {firstBlockedRisk.workflowName}.</p></div>
           <button type="button" onClick={() => setView('impact')}>Test this risk</button>
         </section>
       ) : null}

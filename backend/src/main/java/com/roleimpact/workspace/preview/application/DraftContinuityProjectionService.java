@@ -17,6 +17,7 @@ import com.roleimpact.workspace.editor.persistence.DraftCatalogRepository;
 import com.roleimpact.workspace.preview.api.DraftContinuityRiskResource;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -38,7 +39,7 @@ public class DraftContinuityProjectionService {
 		this.impactEngine = impactEngine;
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 	public List<DraftContinuityRiskResource> project(UUID workspaceId) {
 		validateDraftWorkspace(workspaceId);
 		DraftCatalogResource catalog = catalogRepository.findCatalog(workspaceId);

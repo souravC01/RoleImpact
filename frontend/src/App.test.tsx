@@ -291,6 +291,35 @@ describe('App', () => {
     expect(continuityAttempts).toBe(2)
   })
 
+  it('renders a degraded engine verdict with the warning continuity treatment', async () => {
+    const user = userEvent.setup()
+    const degradedContinuity = clonedContinuityFixture.map((risk) => ({
+      ...risk,
+      members: risk.members.map((member) => ({
+        ...member,
+        remainingEligibleActorCount: 1,
+        scenarioStatus: 'DEGRADED' as const,
+      })),
+    }))
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse(degradedContinuity)
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+
+    const heading = await screen.findByText('This workflow would lose resilience')
+    const signal = heading.closest('.continuity-signal')
+    expect(signal).toHaveClass('warning')
+    expect(getComputedStyle(signal!).backgroundColor).toBe('rgb(43, 36, 20)')
+  })
+
   it('builds a blank draft through teams, members, workflows, impact testing, and shared roles', async () => {
     const user = userEvent.setup()
     let catalog: DraftCatalog = structuredClone(blankCatalogFixture)
@@ -415,7 +444,10 @@ describe('App', () => {
     expect(screen.getByLabelText('Role Release Manager')).toBeInTheDocument()
     expect(screen.getByLabelText('Responsibility Release Manager responsibility')).toBeInTheDocument()
     expect(screen.getByLabelText('Workflow Production Deployment')).toBeInTheDocument()
-    expect(screen.getByLabelText('Continuity risks found')).toHaveTextContent('critical coverage gap')
+    const continuityCallout = screen.getByLabelText('Continuity risks found')
+    expect(continuityCallout).toHaveTextContent('critical coverage gap')
+    expect(continuityCallout).toHaveTextContent('According to the impact engine, removing Release Manager from Maya Singh would block Production Deployment.')
+    expect(continuityCallout).not.toHaveTextContent('provide the minimum coverage')
 
     const graphInventory = screen.getByLabelText('Organization inventory')
     await user.click(within(graphInventory).getByRole('button', { name: 'Role' }))
