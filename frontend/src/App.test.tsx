@@ -155,6 +155,57 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /Teams/ })).toHaveAttribute('aria-current', 'step')
   })
 
+  it('opens impact testing after a deferred continuity projection resolves', async () => {
+    const user = userEvent.setup()
+    const projection = deferred<Response>()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) return projection.promise
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    expect(await screen.findByRole('heading', { name: 'Loading continuity analysis' })).toBeInTheDocument()
+
+    projection.resolve(jsonResponse(clonedContinuityFixture))
+
+    expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Vendor Payment.*would block/ })).toBeInTheDocument()
+  })
+
+  it('opens impact testing after retrying a failed continuity projection', async () => {
+    const user = userEvent.setup()
+    let continuityAttempts = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) {
+        continuityAttempts += 1
+        return continuityAttempts === 1
+          ? jsonResponse({ message: 'Continuity service is unavailable' }, 503)
+          : jsonResponse(clonedContinuityFixture)
+      }
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    expect(await screen.findByRole('heading', { name: 'Continuity analysis is unavailable' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Retry continuity analysis' }))
+
+    expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
+    expect(continuityAttempts).toBe(2)
+  })
+
   it('builds a blank draft through teams, members, workflows, impact testing, and shared roles', async () => {
     const user = userEvent.setup()
     let catalog: DraftCatalog = structuredClone(blankCatalogFixture)
@@ -221,7 +272,7 @@ describe('App', () => {
     await user.type(await screen.findByLabelText('Organization name'), 'Atlas Systems')
     await user.click(screen.getByRole('button', { name: 'Start blank' }))
     expect(await screen.findByRole('heading', { name: 'Map how your organization works' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Add Member' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Add Member' })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Add Team' }))
     await user.type(screen.getByLabelText('Team name'), 'Platform')
@@ -435,6 +486,30 @@ const clonedCatalogFixture: DraftCatalog = {
     { id: 'workflow-payment', name: 'Vendor Payment', criticality: 'CRITICAL', quickManaged: false, requirements: [{ id: 'requirement-payment', name: 'Approve payment', position: 1, minimumActors: 1, resilienceTarget: 1, requiredDepartment: 'Finance', requiredRegion: null, requiredShift: 'EVENING', roleIds: ['role-approver'] }] },
   ],
 }
+
+const clonedContinuityFixture: DraftContinuityRisk[] = [
+  {
+    key: 'workflow-payment:requirement-payment:role-approver',
+    workflowId: 'workflow-payment',
+    workflowName: 'Vendor Payment',
+    criticality: 'CRITICAL',
+    requirementId: 'requirement-payment',
+    requirementName: 'Approve payment',
+    minimumActors: 1,
+    resilienceTarget: 1,
+    roleId: 'role-approver',
+    roleName: 'Finance Approver',
+    eligibleMembers: [{ id: 'member-priya', name: 'Priya Sharma' }],
+    members: [{
+      id: 'member-priya',
+      name: 'Priya Sharma',
+      eligible: true,
+      losesCoverage: true,
+      remainingEligibleActorCount: 0,
+      scenarioStatus: 'BLOCKED',
+    }],
+  },
+]
 
 const dashboardFixture = {
   organization: {
@@ -738,6 +813,12 @@ const customDraftImpactFixture: DraftImpactResult = {
     },
   ],
   excludedCandidateReasons: [],
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
 }
 
 const customDraftContinuityFixture: DraftContinuityRisk[] = [

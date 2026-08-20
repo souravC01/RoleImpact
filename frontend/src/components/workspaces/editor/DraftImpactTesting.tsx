@@ -25,11 +25,20 @@ export default function DraftImpactTesting({ workspaceId, catalog, risks, isCont
     [risks],
   )
   const initialRisk = testableRisks[0]
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState(initialRisk?.workflowId ?? '')
+  const [selectedWorkflowIdState, setSelectedWorkflowId] = useState(initialRisk?.workflowId ?? '')
+  const selectedWorkflowId = testableRisks.some((risk) => risk.workflowId === selectedWorkflowIdState)
+    ? selectedWorkflowIdState
+    : initialRisk?.workflowId ?? ''
   const workflowRisks = testableRisks.filter((risk) => risk.workflowId === selectedWorkflowId)
-  const [selectedRiskKey, setSelectedRiskKey] = useState(initialRisk?.key ?? '')
+  const [selectedRiskKeyState, setSelectedRiskKey] = useState(initialRisk?.key ?? '')
+  const selectedRiskKey = workflowRisks.some((risk) => risk.key === selectedRiskKeyState)
+    ? selectedRiskKeyState
+    : workflowRisks[0]?.key ?? ''
   const selectedRisk = workflowRisks.find((risk) => risk.key === selectedRiskKey) ?? workflowRisks[0]
-  const [selectedMemberId, setSelectedMemberId] = useState(selectedRisk?.members[0]?.id ?? '')
+  const [selectedMemberIdState, setSelectedMemberId] = useState(selectedRisk?.members[0]?.id ?? '')
+  const selectedMemberId = selectedRisk?.members.some((member) => member.id === selectedMemberIdState)
+    ? selectedMemberIdState
+    : selectedRisk?.members[0]?.id ?? ''
   const [showOutcomeExplanation, setShowOutcomeExplanation] = useState(false)
   const [comparisonView, setComparisonView] = useState<'original' | 'mitigation'>('original')
   const selectedMember = selectedRisk?.members.find((member) => member.id === selectedMemberId) ?? selectedRisk?.members[0]
