@@ -3,32 +3,50 @@ import { useMutation } from '@tanstack/react-query'
 import {
   runDraftImpactPreview,
   runDraftMitigationPreview,
+  type DraftContinuityRisk,
   type DraftImpactResult,
 } from '../../../api/draftImpact'
 import type { DraftCatalog } from '../../../api/draftCatalog'
-import { findWorkflowRisks, type WorkflowRisk } from './workflowRisks'
+import { coverageHeading, coverageTone, outcomeTone, predictedOutcome, riskRank } from './continuityRiskPresentation'
 
 const FullOrganizationImpactCanvas = lazy(() => import('./OrganizationCanvas').then((module) => ({ default: module.OrganizationImpactCanvas })))
 
-export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }: {
+export default function DraftImpactTesting({ workspaceId, catalog, risks, isContinuityLoading, continuityError, onRetryContinuity, onBackToMap }: {
   workspaceId: string
   catalog: DraftCatalog
+  risks: DraftContinuityRisk[]
+  isContinuityLoading: boolean
+  continuityError: Error | null
+  onRetryContinuity: () => void
   onBackToMap: () => void
 }) {
   const testableRisks = useMemo(
-    () => findWorkflowRisks(catalog).filter((risk) => risk.members.length > 0).toSorted((left, right) => riskRank(left) - riskRank(right)),
-    [catalog],
+    () => risks.filter((risk) => risk.members.length > 0).toSorted((left, right) => riskRank(left) - riskRank(right)),
+    [risks],
   )
   const initialRisk = testableRisks[0]
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState(initialRisk?.workflowId ?? '')
+  const [selectedWorkflowIdState, setSelectedWorkflowId] = useState(initialRisk?.workflowId ?? '')
+  const selectedWorkflowId = testableRisks.some((risk) => risk.workflowId === selectedWorkflowIdState)
+    ? selectedWorkflowIdState
+    : initialRisk?.workflowId ?? ''
   const workflowRisks = testableRisks.filter((risk) => risk.workflowId === selectedWorkflowId)
-  const [selectedRiskKey, setSelectedRiskKey] = useState(initialRisk?.key ?? '')
+  const [selectedRiskKeyState, setSelectedRiskKey] = useState(initialRisk?.key ?? '')
+  const selectedRiskKey = workflowRisks.some((risk) => risk.key === selectedRiskKeyState)
+    ? selectedRiskKeyState
+    : workflowRisks[0]?.key ?? ''
   const selectedRisk = workflowRisks.find((risk) => risk.key === selectedRiskKey) ?? workflowRisks[0]
-  const [selectedMemberId, setSelectedMemberId] = useState(selectedRisk?.members[0]?.id ?? '')
+  const [selectedMemberIdState, setSelectedMemberId] = useState(selectedRisk?.members[0]?.id ?? '')
+  const selectedMemberId = selectedRisk?.members.some((member) => member.id === selectedMemberIdState)
+    ? selectedMemberIdState
+    : selectedRisk?.members[0]?.id ?? ''
   const [showOutcomeExplanation, setShowOutcomeExplanation] = useState(false)
   const [comparisonView, setComparisonView] = useState<'original' | 'mitigation'>('original')
   const selectedMember = selectedRisk?.members.find((member) => member.id === selectedMemberId) ?? selectedRisk?.members[0]
-  const testableWorkflows = catalog.workflows.filter((workflow) => testableRisks.some((risk) => risk.workflowId === workflow.id))
+  const testableWorkflows = Array.from(new Map(testableRisks.map((risk) => [risk.workflowId, {
+    id: risk.workflowId,
+    name: risk.workflowName,
+    responsibilityCount: new Set(testableRisks.filter((candidate) => candidate.workflowId === risk.workflowId).map((candidate) => candidate.requirementId)).size,
+  }])).values())
   const mitigationMutation = useMutation({
     mutationFn: ({ memberId, roleId, replacementMemberId }: { memberId: string; roleId: string; replacementMemberId: string }) =>
       runDraftMitigationPreview(workspaceId, memberId, roleId, replacementMemberId),
@@ -90,6 +108,12 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
   if (catalog.workflows.length === 0) {
     return <EmptyImpact title="Create one workflow first" message="A workflow connects shared roles to a business outcome. Once that path exists, RoleImpact can visualize and test it." action="Return to organization map" onAction={onBackToMap} />
   }
+  if (isContinuityLoading) {
+    return <EmptyImpact title="Loading continuity analysis" message="RoleImpact is getting the current workflow verdicts from the impact engine." action="Return to organization map" onAction={onBackToMap} />
+  }
+  if (continuityError) {
+    return <section className="impact-testing-empty warning" role="alert"><span aria-hidden="true">!</span><p className="section-kicker">Impact testing</p><h3>Continuity analysis is unavailable</h3><p>{continuityError.message}</p><button type="button" onClick={onRetryContinuity}>Retry continuity analysis</button><button type="button" className="secondary-button" onClick={onBackToMap}>Return to organization map</button></section>
+  }
   if (testableRisks.length === 0) {
     return <EmptyImpact title="No testable role assignment" message="Your workflows do not currently lead to a member through an assigned role. Return to the map and assign members to the required shared roles." action="Fix organization map" onAction={onBackToMap} warning />
   }
@@ -102,7 +126,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
           {testableWorkflows.map((workflow) => {
             const risks = testableRisks.filter((risk) => risk.workflowId === workflow.id)
             const outcome = workflowOutcome(risks)
-            return <button type="button" key={workflow.id} className={workflow.id === selectedWorkflowId ? 'active' : ''} aria-pressed={workflow.id === selectedWorkflowId} onClick={() => chooseWorkflow(workflow.id)}><span><strong>{workflow.name}</strong><small>{workflow.requirements.length} responsibilities</small></span><em className={outcome.tone}>{outcome.label}</em></button>
+            return <button type="button" key={workflow.id} className={workflow.id === selectedWorkflowId ? 'active' : ''} aria-pressed={workflow.id === selectedWorkflowId} onClick={() => chooseWorkflow(workflow.id)}><span><strong>{workflow.name}</strong><small>{workflow.responsibilityCount} responsibilities</small></span><em className={outcome.tone}>{outcome.label}</em></button>
           })}
         </div>
         <button type="button" className="secondary-button" onClick={onBackToMap}>Back to organization map</button>
@@ -138,7 +162,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, onBackToMap }
           <div><p className="section-kicker">Step 2</p><h3 id="scenario-composer-title">Choose what to test</h3><p>Use these controls as a precise alternative to selecting people directly on the full organization map.</p></div>
           <div className="scenario-choice-group"><strong>Responsibility</strong><div className="scenario-choice-list">{workflowRisks.map((risk) => <button type="button" key={risk.key} className={risk.key === selectedRisk.key ? 'active' : ''} aria-pressed={risk.key === selectedRisk.key} onClick={() => chooseRisk(risk.key)}><span>{risk.requirementName}</span><small>{risk.roleName}</small><em className={outcomeTone(risk)}>{predictedOutcome(risk)}</em></button>)}</div></div>
           <div className="scenario-choice-group"><strong>Role holder</strong><div className="member-choice-list">{selectedRisk.members.map((member) => <button type="button" key={member.id} className={member.id === selectedMember.id ? 'active' : ''} aria-pressed={member.id === selectedMember.id} onClick={() => { if (member.id === selectedMemberId) return; setSelectedMemberId(member.id); resetResults() }}><span>{member.name}</span><small>{member.eligible ? 'Eligible for this responsibility' : 'Not eligible under this responsibility’s conditions'}</small></button>)}</div></div>
-          <div className={`continuity-signal ${coverageTone(selectedRisk, selectedMember.losesCoverage)}`}><strong>{coverageHeading(selectedRisk, selectedMember.losesCoverage)}</strong><span>{selectedRisk.eligibleMembers.length} eligible now · minimum {selectedRisk.minimumActors} · healthy target {selectedRisk.resilienceTarget}.</span></div>
+          <div className={`continuity-signal ${coverageTone(selectedMember)}`}><strong>{coverageHeading(selectedRisk, selectedMember)}</strong><span>{selectedRisk.eligibleMembers.length} eligible now · {selectedMember.remainingEligibleActorCount} eligible after this change · minimum {selectedRisk.minimumActors} · healthy target {selectedRisk.resilienceTarget}.</span></div>
           <div className="scenario-action-summary"><span>What if</span><strong>{selectedMember.name} loses {selectedRisk.roleName}?</strong><p>No organization data will be changed.</p></div>
           <div className="scenario-actions"><button type="button" disabled={mutation.isPending || mitigationMutation.isPending} onClick={() => runScenario(selectedRisk.key, selectedMember.id)}>{mutation.isPending ? 'Calculating impact…' : 'Run this what-if test'}</button>{originalResult ? <button type="button" className="secondary-button" onClick={resetResults}>Reset to baseline</button> : null}</div>
           {mutation.isError ? <p className="form-error" role="alert">{mutation.error.message}</p> : null}
@@ -236,18 +260,17 @@ function CandidateExclusions({ result }: { result: DraftImpactResult }) {
   )
 }
 
-function OutcomeExplanation({ risk, member, onDismiss }: { risk: WorkflowRisk; member: WorkflowRisk['members'][number]; onDismiss: () => void }) {
-  const survivors = risk.eligibleMembers.filter((candidate) => candidate.id !== member.id || !member.losesCoverage)
-  const tone = survivors.length < risk.minimumActors ? 'blocked' : survivors.length < risk.resilienceTarget ? 'degraded' : 'safe'
-  const heading = tone === 'blocked' ? 'This responsibility is now blocked' : tone === 'degraded' ? 'It still works, but resilience is reduced' : 'Coverage remains healthy'
-  const coverageText = survivors.length === 0
-    ? `${member.name} was the only eligible holder. No one can now perform ${risk.requirementName}.`
-    : `${member.name} loses ${risk.roleName}, but ${formatNames(survivors.map((survivor) => survivor.name))} ${survivors.length === 1 ? 'still provides' : 'still provide'} coverage.`
+function OutcomeExplanation({ risk, member, onDismiss }: { risk: DraftContinuityRisk; member: DraftContinuityRisk['members'][number]; onDismiss: () => void }) {
+  const tone = member.scenarioStatus === 'BLOCKED' ? 'blocked' : member.scenarioStatus === 'DEGRADED' ? 'degraded' : 'safe'
+  const heading = member.scenarioStatus === 'BLOCKED' ? 'This workflow would be blocked' : member.scenarioStatus === 'DEGRADED' ? 'It still works, but resilience is reduced' : 'The workflow remains operational'
+  const coverageText = member.remainingEligibleActorCount === 0
+    ? `After ${member.name} loses ${risk.roleName}, the impact engine finds no eligible actor for ${risk.requirementName}.`
+    : `After ${member.name} loses ${risk.roleName}, the impact engine finds ${member.remainingEligibleActorCount} eligible actor${member.remainingEligibleActorCount === 1 ? '' : 's'} for ${risk.requirementName}.`
 
   return (
     <aside className={`outcome-explanation ${tone}`} role="status" aria-live="polite">
       <span className="outcome-explanation-icon" aria-hidden="true">{tone === 'blocked' ? '!' : tone === 'degraded' ? '△' : '✓'}</span>
-      <div><strong>{heading}</strong><p>{coverageText}</p><small>Rule: {survivors.length} eligible after change · minimum {risk.minimumActors} to operate · {risk.resilienceTarget} for healthy coverage.</small></div>
+      <div><strong>{heading}</strong><p>{coverageText}</p><small>Engine verdict: {member.scenarioStatus} · {member.remainingEligibleActorCount} eligible after change · minimum {risk.minimumActors} to operate · {risk.resilienceTarget} for healthy coverage.</small></div>
       <button type="button" aria-label="Dismiss outcome explanation" onClick={onDismiss}>×</button>
     </aside>
   )
@@ -307,42 +330,7 @@ function resultExplanation(result: DraftImpactResult, requirementName: string) {
   return `If ${change.employee.name} loses ${change.role.name}, RoleImpact recalculates ${requirementName}: ${result.executiveSummary.workflowsBlocked} workflow(s) are blocked and ${result.executiveSummary.workflowsDegraded} are degraded.`
 }
 
-function workflowOutcome(risks: WorkflowRisk[]) {
+function workflowOutcome(risks: DraftContinuityRisk[]) {
   const best = risks.toSorted((left, right) => riskRank(left) - riskRank(right))[0]
   return best ? { label: predictedOutcome(best), tone: outcomeTone(best) } : { label: 'not testable', tone: 'neutral' }
-}
-
-function riskRank(risk: WorkflowRisk) {
-  const remaining = remainingCoverage(risk)
-  if (remaining < risk.minimumActors) return 0
-  if (remaining < risk.resilienceTarget) return 1
-  return 2
-}
-
-function predictedOutcome(risk: WorkflowRisk) {
-  const remaining = remainingCoverage(risk)
-  if (remaining < risk.minimumActors) return 'would block'
-  if (remaining < risk.resilienceTarget) return 'would degrade'
-  return 'coverage remains safe'
-}
-
-function outcomeTone(risk: WorkflowRisk) {
-  return ['danger', 'warning', 'safe'][riskRank(risk)]
-}
-
-function remainingCoverage(risk: WorkflowRisk) {
-  return risk.eligibleMembers.length - (risk.members.some((member) => member.losesCoverage) ? 1 : 0)
-}
-
-function coverageHeading(risk: WorkflowRisk, losesCoverage: boolean) {
-  if (!losesCoverage) return 'Other access still covers this step'
-  const remaining = risk.eligibleMembers.length - 1
-  if (remaining < risk.minimumActors) return 'This change would block the step'
-  if (remaining < risk.resilienceTarget) return 'This change would reduce resilience'
-  return 'Coverage would remain healthy'
-}
-
-function coverageTone(risk: WorkflowRisk, losesCoverage: boolean) {
-  if (!losesCoverage) return 'ready'
-  return risk.eligibleMembers.length - 1 < risk.resilienceTarget ? 'critical' : 'ready'
 }

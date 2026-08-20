@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { DraftCatalog } from './api/draftCatalog'
-import type { DraftImpactResult, DraftMitigationPreview } from './api/draftImpact'
+import type { DraftContinuityRisk, DraftImpactResult, DraftMitigationPreview } from './api/draftImpact'
 import type { Simulation } from './api/simulations'
 
 afterEach(() => {
@@ -155,14 +155,186 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /Teams/ })).toHaveAttribute('aria-current', 'step')
   })
 
+  it('creates an inventory role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Detailed inventory' }))
+    await user.click(screen.getByRole('button', { name: /Roles/ }))
+    await user.type(screen.getByLabelText('Role name'), 'Release Manager')
+    await user.type(screen.getByLabelText('Description'), 'Approves production releases')
+    await user.click(screen.getByRole('checkbox', { name: 'Priya Sharma' }))
+    await user.click(screen.getByRole('button', { name: 'Add shared role & continue' }))
+
+    expect((await screen.findAllByText(/Release Manager/)).length).toBeGreaterThan(0)
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('updates an inventory role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Detailed inventory' }))
+    await user.click(screen.getByRole('button', { name: /Roles/ }))
+    const financeRole = screen.getByText('Finance Approver', { selector: 'strong' }).closest('article')
+    expect(financeRole).not.toBeNull()
+    await user.click(within(financeRole!).getByRole('button', { name: 'Edit' }))
+    await user.selectOptions(screen.getByLabelText('Sensitivity'), 'HIGH')
+    await user.click(screen.getByRole('button', { name: 'Save role and holders' }))
+
+    expect(await screen.findByText(/HIGH · 1 holders/)).toBeInTheDocument()
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('quick-creates a map role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Role' }))
+    await user.type(screen.getByLabelText('Role name'), 'Release Manager')
+    await user.click(screen.getByRole('checkbox', { name: 'Priya Sharma' }))
+    await user.click(screen.getByRole('button', { name: 'Create role' }))
+
+    expect(await screen.findByText('Role created')).toBeInTheDocument()
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('reuses a map role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Role' }))
+    await user.type(screen.getByLabelText('Role name'), 'Finance Approver')
+    expect(screen.getByRole('checkbox', { name: 'Priya Sharma' })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Assign existing role' }))
+
+    expect(await screen.findByText('Role assigned')).toBeInTheDocument()
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('preselects current holders before reusing a map role', async () => {
+    const user = userEvent.setup()
+    mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Role' }))
+    await user.type(screen.getByLabelText('Role name'), 'Finance Approver')
+
+    expect(screen.getByRole('checkbox', { name: 'Priya Sharma' })).toBeChecked()
+  })
+
+  it('opens impact testing after a deferred continuity projection resolves', async () => {
+    const user = userEvent.setup()
+    const projection = deferred<Response>()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) return projection.promise
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    expect(await screen.findByRole('heading', { name: 'Loading continuity analysis' })).toBeInTheDocument()
+
+    projection.resolve(jsonResponse(clonedContinuityFixture))
+
+    expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Vendor Payment.*would block/ })).toBeInTheDocument()
+  })
+
+  it('opens impact testing after retrying a failed continuity projection', async () => {
+    const user = userEvent.setup()
+    let continuityAttempts = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) {
+        continuityAttempts += 1
+        return continuityAttempts === 1
+          ? jsonResponse({ message: 'Continuity service is unavailable' }, 503)
+          : jsonResponse(clonedContinuityFixture)
+      }
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    expect(await screen.findByRole('heading', { name: 'Continuity analysis is unavailable' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Retry continuity analysis' }))
+
+    expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
+    expect(continuityAttempts).toBe(2)
+  })
+
+  it('renders a degraded engine verdict with the warning continuity treatment', async () => {
+    const user = userEvent.setup()
+    const degradedContinuity = clonedContinuityFixture.map((risk) => ({
+      ...risk,
+      members: risk.members.map((member) => ({
+        ...member,
+        remainingEligibleActorCount: 1,
+        scenarioStatus: 'DEGRADED' as const,
+      })),
+    }))
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = input.toString()
+      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse(degradedContinuity)
+      return new Response(null, { status: 404 })
+    })
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+
+    const heading = await screen.findByText('This workflow would lose resilience')
+    const signal = heading.closest('.continuity-signal')
+    expect(signal).toHaveClass('warning')
+    expect(getComputedStyle(signal!).backgroundColor).toBe('rgb(43, 36, 20)')
+  })
+
   it('builds a blank draft through teams, members, workflows, impact testing, and shared roles', async () => {
     const user = userEvent.setup()
     let catalog: DraftCatalog = structuredClone(blankCatalogFixture)
+    let continuityRequests = 0
+    const roleRequests: Array<{ method: string; body: { holderMemberIds?: string[] } }> = []
+    const memberRoleRequests: string[] = []
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = input.toString()
       if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
       if (url.endsWith('/api/v1/workspaces') && init?.method === 'POST') return jsonResponse(blankWorkspaceFixture, 201)
       if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
+      if (url.endsWith('/impact-previews/continuity') && !init?.method) {
+        continuityRequests += 1
+        return jsonResponse(catalog.workflows.length === 0 ? [] : customDraftContinuityFixture)
+      }
       if (url.endsWith('/catalog/teams') && init?.method === 'POST') {
         const input = JSON.parse(String(init.body)) as { name: string; department: string }
         catalog = { ...catalog, teams: [{ id: 'team-1', name: input.name, department: input.department, memberCount: 0 }] }
@@ -176,8 +348,9 @@ describe('App', () => {
         return jsonResponse(catalog)
       }
       if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
-        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity'] }
-        catalog = { ...catalog, roles: [{ id: 'role-1', name: input.name, description: input.description, sensitivity: input.sensitivity, ownerMemberId: null, memberCount: 0 }] }
+        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null; holderMemberIds?: string[] }
+        roleRequests.push({ method: 'POST', body: input })
+        catalog = applyRoleHolders({ ...catalog, roles: [{ id: 'role-1', name: input.name, description: input.description, sensitivity: input.sensitivity, ownerMemberId: input.ownerMemberId, memberCount: 0 }] }, 'role-1', input.holderMemberIds)
         return jsonResponse(catalog)
       }
       if (url.endsWith('/catalog/members/member-1') && init?.method === 'PUT') {
@@ -186,12 +359,14 @@ describe('App', () => {
         return jsonResponse(catalog)
       }
       if (url.endsWith('/catalog/roles/role-1') && init?.method === 'PUT') {
-        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null }
-        catalog = { ...catalog, roles: [{ ...catalog.roles[0], ...input }] }
+        const input = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null; holderMemberIds?: string[] }
+        roleRequests.push({ method: 'PUT', body: input })
+        catalog = applyRoleHolders({ ...catalog, roles: [{ ...catalog.roles[0], ...input }] }, 'role-1', input.holderMemberIds)
         return jsonResponse(catalog)
       }
       if (url.match(/\/members\/[^/]+\/roles$/) && init?.method === 'PUT') {
         const memberId = url.match(/\/members\/([^/]+)\/roles$/)![1]
+        memberRoleRequests.push(memberId)
         const input = JSON.parse(String(init.body)) as { roleIds: string[] }
         const members = catalog.members.map((member) => member.id === memberId ? { ...member, roleIds: input.roleIds } : member)
         const roles = catalog.roles.map((role) => ({ ...role, memberCount: members.filter((member) => member.roleIds.includes(role.id)).length }))
@@ -216,7 +391,7 @@ describe('App', () => {
     await user.type(await screen.findByLabelText('Organization name'), 'Atlas Systems')
     await user.click(screen.getByRole('button', { name: 'Start blank' }))
     expect(await screen.findByRole('heading', { name: 'Map how your organization works' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Add Member' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Add Member' })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Add Team' }))
     await user.type(screen.getByLabelText('Team name'), 'Platform')
@@ -244,6 +419,9 @@ describe('App', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Maya Singh' }))
     await user.click(screen.getByRole('button', { name: 'Create role' }))
     expect(await screen.findByText('Role created')).toBeInTheDocument()
+    expect(roleRequests.filter((request) => request.method === 'POST')).toHaveLength(1)
+    expect(roleRequests.filter((request) => request.method === 'POST')[0].body.holderMemberIds).toEqual(['member-1'])
+    expect(memberRoleRequests).toHaveLength(0)
 
     expect(within(screen.getByLabelText('Organization inventory')).queryByRole('button', { name: 'Delete object' })).not.toBeInTheDocument()
 
@@ -252,8 +430,10 @@ describe('App', () => {
     await user.type(screen.getByLabelText('Workflow name'), 'Production Deployment')
     await user.selectOptions(screen.getByLabelText('Business criticality'), 'CRITICAL')
     await user.type(screen.getByLabelText('Responsibility or step'), 'Release Manager responsibility')
+    const continuityRequestsBeforeWorkflow = continuityRequests
     await user.click(screen.getByRole('button', { name: 'Create workflow' }))
     expect(await screen.findByText(/CRITICAL · 1 role responsibilities/)).toBeInTheDocument()
+    expect(continuityRequests).toBeGreaterThan(continuityRequestsBeforeWorkflow)
     await user.click(screen.getByRole('button', { name: 'Organization map' }))
     expect(screen.getByLabelText('Organization inventory')).toHaveTextContent('Production Deployment')
     expect(screen.getByLabelText('Organization relationship canvas')).toBeInTheDocument()
@@ -264,7 +444,10 @@ describe('App', () => {
     expect(screen.getByLabelText('Role Release Manager')).toBeInTheDocument()
     expect(screen.getByLabelText('Responsibility Release Manager responsibility')).toBeInTheDocument()
     expect(screen.getByLabelText('Workflow Production Deployment')).toBeInTheDocument()
-    expect(screen.getByLabelText('Continuity risks found')).toHaveTextContent('critical coverage gap')
+    const continuityCallout = screen.getByLabelText('Continuity risks found')
+    expect(continuityCallout).toHaveTextContent('critical coverage gap')
+    expect(continuityCallout).toHaveTextContent('According to the impact engine, removing Release Manager from Maya Singh would block Production Deployment.')
+    expect(continuityCallout).not.toHaveTextContent('provide the minimum coverage')
 
     const graphInventory = screen.getByLabelText('Organization inventory')
     await user.click(within(graphInventory).getByRole('button', { name: 'Role' }))
@@ -307,10 +490,10 @@ describe('App', () => {
     const selectedMaya = screen.getByLabelText('Selected Member Maya Singh')
     expect(selectedMaya).toHaveTextContent('Connected workflows')
     await user.click(within(selectedMaya).getByRole('button', { name: 'Test losing Release Manager' }))
-    expect(await screen.findByText('This responsibility is now blocked')).toBeInTheDocument()
-    expect(screen.getByText(/Maya Singh was the only eligible holder/)).toBeInTheDocument()
+    expect(await screen.findAllByText('This workflow would be blocked')).not.toHaveLength(0)
+    expect(screen.getByText(/the impact engine finds 2 eligible actors/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Production Deployment.*would block/ }))
-    expect(screen.getByText('This responsibility is now blocked')).toBeInTheDocument()
+    expect(screen.getAllByText('This workflow would be blocked')).not.toHaveLength(0)
     expect(await screen.findByRole('heading', { name: 'A workflow would be blocked' })).toBeInTheDocument()
     expect(screen.getByLabelText('Complete organization impact map')).toBeInTheDocument()
     expect(screen.getByLabelText(/member Arjun Mehta.*Recommended #1/i)).toBeInTheDocument()
@@ -339,6 +522,9 @@ describe('App', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Arjun Mehta' }))
     await user.click(screen.getByRole('button', { name: 'Assign existing role' }))
     expect(await screen.findByText('Role assigned')).toBeInTheDocument()
+    expect(roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(1)
+    expect(roleRequests.filter((request) => request.method === 'PUT')[0].body.holderMemberIds).toEqual(['member-1', 'member-2'])
+    expect(memberRoleRequests).toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: 'Detailed inventory' }))
     await user.click(screen.getByRole('button', { name: /Members/ }))
@@ -352,6 +538,7 @@ describe('App', () => {
     const mayaNode = screen.getByLabelText('Member Maya Singh').closest('.react-flow__node')
     const arjunNode = screen.getByLabelText('Member Arjun Mehta').closest('.react-flow__node')
     expect(mayaNode?.getAttribute('style')).not.toEqual(arjunNode?.getAttribute('style'))
+    const memberRoleRequestsBeforeRoleEdit = memberRoleRequests.length
     await user.click(screen.getByRole('button', { name: 'Detailed inventory' }))
     await user.click(screen.getByRole('button', { name: /Roles/ }))
     expect(await screen.findByText(/2 holders/)).toBeInTheDocument()
@@ -360,6 +547,9 @@ describe('App', () => {
     await user.selectOptions(screen.getByLabelText('Sensitivity'), 'CRITICAL')
     await user.click(screen.getByRole('button', { name: 'Save role and holders' }))
     expect(await screen.findByText(/CRITICAL · 2 holders/)).toBeInTheDocument()
+    expect(roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(2)
+    expect(roleRequests.at(-1)).toEqual({ method: 'PUT', body: expect.objectContaining({ holderMemberIds: ['member-1', 'member-2'] }) })
+    expect(memberRoleRequests).toHaveLength(memberRoleRequestsBeforeRoleEdit)
   }, 15000)
 })
 
@@ -368,6 +558,78 @@ function jsonResponse(value: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+function applyRoleHolders(catalog: DraftCatalog, roleId: string, holderMemberIds?: string[]) {
+  if (holderMemberIds === undefined) return catalog
+  const holderIds = new Set(holderMemberIds)
+  const members = catalog.members.map((member) => ({
+    ...member,
+    roleIds: holderIds.has(member.id)
+      ? [...new Set([...member.roleIds, roleId])]
+      : member.roleIds.filter((id) => id !== roleId),
+  }))
+  return {
+    ...catalog,
+    members,
+    roles: catalog.roles.map((role) => ({ ...role, memberCount: members.filter((member) => member.roleIds.includes(role.id)).length })),
+  }
+}
+
+type RoleMutationRequest = {
+  method: 'POST' | 'PUT'
+  body: {
+    name: string
+    description: string
+    sensitivity: DraftCatalog['roles'][number]['sensitivity']
+    ownerMemberId: string | null
+    holderMemberIds?: string[]
+  }
+}
+
+function mockEditableClone(initialCatalog: DraftCatalog) {
+  let catalog = structuredClone(initialCatalog)
+  const roleRequests: RoleMutationRequest[] = []
+  const memberRoleRequests: string[] = []
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = input.toString()
+    if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+    if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+    if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
+    if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse([])
+    if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as RoleMutationRequest['body']
+      roleRequests.push({ method: 'POST', body })
+      catalog = applyRoleHolders({
+        ...catalog,
+        roles: [...catalog.roles, { id: 'role-release', name: body.name, description: body.description, sensitivity: body.sensitivity, ownerMemberId: body.ownerMemberId, memberCount: 0 }],
+      }, 'role-release', body.holderMemberIds)
+      return jsonResponse(catalog)
+    }
+    const roleMatch = url.match(/\/catalog\/roles\/([^/]+)$/)
+    if (roleMatch && init?.method === 'PUT') {
+      const body = JSON.parse(String(init.body)) as RoleMutationRequest['body']
+      const roleId = roleMatch[1]
+      roleRequests.push({ method: 'PUT', body })
+      catalog = applyRoleHolders({
+        ...catalog,
+        roles: catalog.roles.map((role) => role.id === roleId ? {
+          ...role,
+          name: body.name,
+          description: body.description,
+          sensitivity: body.sensitivity,
+          ownerMemberId: body.ownerMemberId,
+        } : role),
+      }, roleId, body.holderMemberIds)
+      return jsonResponse(catalog)
+    }
+    if (url.match(/\/members\/[^/]+\/roles$/) && init?.method === 'PUT') {
+      memberRoleRequests.push(url)
+      return jsonResponse(catalog)
+    }
+    return new Response(null, { status: 404 })
+  })
+  return { roleRequests, memberRoleRequests }
 }
 
 const workspaceFixture = [
@@ -428,6 +690,30 @@ const clonedCatalogFixture: DraftCatalog = {
     { id: 'workflow-payment', name: 'Vendor Payment', criticality: 'CRITICAL', quickManaged: false, requirements: [{ id: 'requirement-payment', name: 'Approve payment', position: 1, minimumActors: 1, resilienceTarget: 1, requiredDepartment: 'Finance', requiredRegion: null, requiredShift: 'EVENING', roleIds: ['role-approver'] }] },
   ],
 }
+
+const clonedContinuityFixture: DraftContinuityRisk[] = [
+  {
+    key: 'workflow-payment:requirement-payment:role-approver',
+    workflowId: 'workflow-payment',
+    workflowName: 'Vendor Payment',
+    criticality: 'CRITICAL',
+    requirementId: 'requirement-payment',
+    requirementName: 'Approve payment',
+    minimumActors: 1,
+    resilienceTarget: 1,
+    roleId: 'role-approver',
+    roleName: 'Finance Approver',
+    eligibleMembers: [{ id: 'member-priya', name: 'Priya Sharma' }],
+    members: [{
+      id: 'member-priya',
+      name: 'Priya Sharma',
+      eligible: true,
+      losesCoverage: true,
+      remainingEligibleActorCount: 0,
+      scenarioStatus: 'BLOCKED',
+    }],
+  },
+]
 
 const dashboardFixture = {
   organization: {
@@ -732,6 +1018,42 @@ const customDraftImpactFixture: DraftImpactResult = {
   ],
   excludedCandidateReasons: [],
 }
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
+}
+
+const customDraftContinuityFixture: DraftContinuityRisk[] = [
+  {
+    key: 'workflow-1:requirement-1:role-1',
+    workflowId: 'workflow-1',
+    workflowName: 'Production Deployment',
+    criticality: 'CRITICAL',
+    requirementId: 'requirement-1',
+    requirementName: 'Release Manager responsibility',
+    minimumActors: 1,
+    resilienceTarget: 1,
+    roleId: 'role-1',
+    roleName: 'Release Manager',
+    // The supplied BLOCKED verdict is authoritative even with two baseline actors.
+    eligibleMembers: [
+      { id: 'member-1', name: 'Maya Singh' },
+      { id: 'member-2', name: 'Arjun Mehta' },
+    ],
+    members: [
+      {
+        id: 'member-1',
+        name: 'Maya Singh',
+        eligible: true,
+        losesCoverage: false,
+        remainingEligibleActorCount: 2,
+        scenarioStatus: 'BLOCKED',
+      },
+    ],
+  },
+]
 
 const customDraftMitigationPreviewFixture: DraftMitigationPreview = {
   original: customDraftImpactFixture,

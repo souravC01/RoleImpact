@@ -10,9 +10,8 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { DraftCatalog } from '../../../api/draftCatalog'
-import type { DraftImpactResult } from '../../../api/draftImpact'
+import type { DraftContinuityRisk, DraftImpactResult } from '../../../api/draftImpact'
 import type { CanvasNode, OrganizationSimulationState } from './OrganizationCanvas'
-import type { WorkflowRisk } from './workflowRisks'
 
 type ImpactContextMenu = { x: number; y: number; memberId: string }
 type ImpactEdgeState = 'removed' | 'blocked' | 'degraded' | 'restored' | 'candidate'
@@ -21,7 +20,7 @@ export type FullOrganizationImpactCanvasProps = {
   workspaceId: string
   catalog: DraftCatalog
   workflowId: string
-  risks: WorkflowRisk[]
+  risks: DraftContinuityRisk[]
   selectedRiskKey: string
   selectedMemberId: string
   originalResult?: DraftImpactResult
@@ -173,8 +172,8 @@ export default function FullOrganizationImpactCanvas({
 function ImpactSelectionPanel({ node, catalog, risks, selectedRisk, originalResult, isPending, onClose, onRunScenario, onTryReplacement }: {
   node: CanvasNode
   catalog: DraftCatalog
-  risks: WorkflowRisk[]
-  selectedRisk: WorkflowRisk
+  risks: DraftContinuityRisk[]
+  selectedRisk: DraftContinuityRisk
   originalResult?: DraftImpactResult
   isPending: boolean
   onClose: () => void
@@ -240,7 +239,7 @@ function ImpactSelectionPanel({ node, catalog, risks, selectedRisk, originalResu
 }
 
 function ImpactRiskActions({ actions, isPending, onRun, empty }: {
-  actions: Array<{ risk: WorkflowRisk; member: WorkflowRisk['members'][number] }>
+  actions: Array<{ risk: DraftContinuityRisk; member: DraftContinuityRisk['members'][number] }>
   isPending: boolean
   onRun: (riskKey: string, memberId: string) => void
   empty: string
@@ -254,8 +253,8 @@ function ImpactMemberMenu({ x, y, memberId, catalog, risks, selectedRisk, origin
   y: number
   memberId: string
   catalog: DraftCatalog
-  risks: WorkflowRisk[]
-  selectedRisk: WorkflowRisk
+  risks: DraftContinuityRisk[]
+  selectedRisk: DraftContinuityRisk
   originalResult?: DraftImpactResult
   isPending: boolean
   onClose: () => void
@@ -288,7 +287,7 @@ function buildImpactModel(
   baseNodes: CanvasNode[],
   baseEdges: Edge[],
   baseFocusIds: Set<string>,
-  selectedRisk: WorkflowRisk | undefined,
+  selectedRisk: DraftContinuityRisk | undefined,
   selectedMemberId: string,
   originalResult?: DraftImpactResult,
   displayedResult?: DraftImpactResult,
@@ -421,12 +420,12 @@ function emphasizeSelectedEdges(edges: Edge[], selectedPathIds: Set<string> | nu
   })
 }
 
-function uniqueRisksByRole(risks: WorkflowRisk[]) {
+function uniqueRisksByRole(risks: DraftContinuityRisk[]) {
   return Array.from(new Map(risks.map((risk) => [risk.roleId, risk])).values())
 }
 
-function uniqueRiskActions(risks: WorkflowRisk[]) {
-  const actions = new Map<string, { risk: WorkflowRisk; member: WorkflowRisk['members'][number] }>()
+function uniqueRiskActions(risks: DraftContinuityRisk[]) {
+  const actions = new Map<string, { risk: DraftContinuityRisk; member: DraftContinuityRisk['members'][number] }>()
   risks.forEach((risk) => risk.members.forEach((member) => {
     const key = `${risk.roleId}:${member.id}`
     if (!actions.has(key)) actions.set(key, { risk, member })

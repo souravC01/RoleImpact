@@ -210,23 +210,18 @@ class WorkspaceIntegrationTest {
 						.content("""
 								{
 								  "name":"Release Manager", "description":"Approves production releases",
-								  "sensitivity":"HIGH", "ownerMemberId":"%s"
+								  "sensitivity":"HIGH", "ownerMemberId":"%s",
+								  "holderMemberIds":["%s"]
 								}
-								""".formatted(memberId)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.roles[0].name").value("Release Manager"))
-				.andReturn();
+								""".formatted(memberId, memberId)))
+						.andExpect(status().isOk())
+						.andExpect(jsonPath("$.roles[0].name").value("Release Manager"))
+						.andExpect(jsonPath("$.roles[0].memberCount").value(1))
+						.andReturn();
 		UUID roleId = UUID.fromString(objectMapper.readTree(roleResponse.getResponse().getContentAsString())
 				.path("roles").get(0).path("id").asText());
-
-		var assignmentResponse = mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/members/{memberId}/roles", workspaceId, memberId)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"roleIds\":[\"" + roleId + "\"]}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.roles[0].memberCount").value(1))
-				.andReturn();
 		assertThat(findById(
-				objectMapper.readTree(assignmentResponse.getResponse().getContentAsString()),
+				objectMapper.readTree(roleResponse.getResponse().getContentAsString()),
 				"members",
 				memberId).path("roleIds").get(0).asText()).isEqualTo(roleId.toString());
 
@@ -255,12 +250,46 @@ class WorkspaceIntegrationTest {
 						.content("""
 								{
 								  "name":"Production Release Manager", "description":"Approves production releases",
-								  "sensitivity":"CRITICAL", "ownerMemberId":"%s"
+								  "sensitivity":"CRITICAL", "ownerMemberId":"%s",
+								  "holderMemberIds":["%s","%s"]
 								}
-								""".formatted(memberId)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.roles[0].name").value("Production Release Manager"))
-				.andExpect(jsonPath("$.roles[0].sensitivity").value("CRITICAL"));
+								""".formatted(memberId, memberId, candidateId)))
+						.andExpect(status().isOk())
+						.andExpect(jsonPath("$.roles[0].name").value("Production Release Manager"))
+						.andExpect(jsonPath("$.roles[0].sensitivity").value("CRITICAL"))
+						.andExpect(jsonPath("$.roles[0].memberCount").value(2));
+
+		UUID unknownHolderId = UUID.fromString("00000000-0000-0000-0000-000000000999");
+		mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/roles/{roleId}", workspaceId, roleId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "name":"Should Not Persist", "description":"Should not persist",
+								  "sensitivity":"LOW", "ownerMemberId":null,
+								  "holderMemberIds":["%s","%s"]
+								}
+								""".formatted(memberId, unknownHolderId)))
+						.andExpect(status().isNotFound());
+		var catalogAfterRejectedRoleUpdate = objectMapper.readTree(mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/catalog", workspaceId))
+						.andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+		assertThat(findById(catalogAfterRejectedRoleUpdate, "roles", roleId).path("name").asText())
+				.isEqualTo("Production Release Manager");
+		assertThat(findById(catalogAfterRejectedRoleUpdate, "members", memberId).path("roleIds"))
+				.extracting(com.fasterxml.jackson.databind.JsonNode::asText).containsExactly(roleId.toString());
+		assertThat(findById(catalogAfterRejectedRoleUpdate, "members", candidateId).path("roleIds"))
+				.extracting(com.fasterxml.jackson.databind.JsonNode::asText).containsExactly(roleId.toString());
+
+		mockMvc.perform(put("/api/v1/workspaces/{workspaceId}/catalog/roles/{roleId}", workspaceId, roleId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "name":"Production Release Manager", "description":"Approves production releases",
+								  "sensitivity":"CRITICAL", "ownerMemberId":"%s",
+								  "holderMemberIds":["%s"]
+								}
+								""".formatted(memberId, memberId)))
+						.andExpect(status().isOk())
+						.andExpect(jsonPath("$.roles[0].memberCount").value(1));
 
 		var workflowResponse = mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/catalog/workflows/quick", workspaceId)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -343,6 +372,13 @@ class WorkspaceIntegrationTest {
 				.andExpect(jsonPath("$.mitigation.changeSet.replacementEmployee.id").value(inactiveCandidateId.toString()))
 				.andExpect(jsonPath("$.mitigation.overallSeverity").value("CRITICAL"))
 				.andExpect(jsonPath("$.mitigation.executiveSummary.workflowsBlocked").value(1));
+
+		mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/impact-previews/continuity", workspaceId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.workflowName == 'Production Deployment' && @.requirementName == 'Approve production release')].eligibleMembers[0].id")
+						.value(memberId.toString()))
+				.andExpect(jsonPath("$[?(@.workflowName == 'Production Deployment' && @.requirementName == 'Approve production release')].members[0].scenarioStatus")
+						.value("BLOCKED"));
 
 		var catalogAfterMitigation = mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/catalog", workspaceId))
 				.andExpect(status().isOk())

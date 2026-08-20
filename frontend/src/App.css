@@ -1691,8 +1691,10 @@
 }
 
 .continuity-signal.critical { border-color: #704352; background: #27171e; }
+.continuity-signal.warning { border-color: #7b6434; background: #2b2414; }
 .continuity-signal strong { color: #9cddc1; font-size: 0.75rem; }
 .continuity-signal.critical strong { color: #f6aebb; }
+.continuity-signal.warning strong { color: #efc46a; }
 .continuity-signal span { color: #89958f; font-size: 0.67rem; }
 
 .impact-test-result {

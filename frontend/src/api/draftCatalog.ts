@@ -56,7 +56,7 @@ export type DraftCatalog = {
 
 export type TeamInput = { name: string; department: string }
 export type MemberInput = Omit<DraftMember, 'id' | 'roleIds'>
-export type RoleInput = Omit<DraftRole, 'id' | 'memberCount'>
+export type RoleInput = Omit<DraftRole, 'id' | 'memberCount'> & { holderMemberIds?: string[] }
 export type WorkflowRequirementInput = {
   name: string
   roleId: string

@@ -18,7 +18,7 @@ import {
   type DraftCatalog,
   type DraftMember,
 } from '../../../api/draftCatalog'
-import { findWorkflowRisks } from './workflowRisks'
+import { fetchDraftContinuityRisks } from '../../../api/draftImpact'
 
 const OrganizationCanvas = lazy(() => import('./OrganizationCanvas'))
 const DraftImpactTesting = lazy(() => import('./DraftImpactTesting'))
@@ -32,6 +32,10 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
   const catalogQuery = useQuery({
     queryKey: ['draft-catalog', workspaceId],
     queryFn: ({ signal }) => fetchDraftCatalog(workspaceId, signal),
+  })
+  const continuityQuery = useQuery({
+    queryKey: ['draft-continuity', workspaceId],
+    queryFn: ({ signal }) => fetchDraftContinuityRisks(workspaceId, signal),
   })
 
   if (catalogQuery.isPending) return <p className="editor-state">Loading the draft catalog…</p>
@@ -51,9 +55,10 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
     { label: 'roles', value: catalog.roles.length },
     { label: 'workflows', value: catalog.workflows.length },
   ]
-  const singlePointRisks = findWorkflowRisks(catalog).filter((risk) =>
-    risk.eligibleMembers.length > 0 && risk.eligibleMembers.length === risk.minimumActors,
-  )
+  const continuityRisks = continuityQuery.data ?? []
+  const singlePointRisks = continuityRisks.filter((risk) => risk.members.some((member) => member.scenarioStatus === 'BLOCKED'))
+  const firstBlockedRisk = singlePointRisks[0]
+  const firstBlockedMember = firstBlockedRisk?.members.find((member) => member.scenarioStatus === 'BLOCKED')
 
   function moveToStage(nextStage: EditorStage) {
     setStage(nextStage)
@@ -86,10 +91,10 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
         ))}
       </div>
 
-      {view === 'map' && singlePointRisks.length > 0 ? (
+      {view === 'map' && !continuityQuery.isFetching && !continuityQuery.isError && firstBlockedRisk && firstBlockedMember ? (
         <section className="risk-callout" aria-label="Continuity risks found">
           <span aria-hidden="true">!</span>
-          <div><strong>{singlePointRisks.length} critical coverage gap{singlePointRisks.length === 1 ? '' : 's'} found</strong><p>{singlePointRisks[0].eligibleMembers.map((member) => member.name).join(', ')} provide the minimum coverage for {singlePointRisks[0].requirementName} in {singlePointRisks[0].workflowName}.</p></div>
+          <div><strong>{singlePointRisks.length} critical coverage gap{singlePointRisks.length === 1 ? '' : 's'} found</strong><p>According to the impact engine, removing {firstBlockedRisk.roleName} from {firstBlockedMember.name} would block {firstBlockedRisk.workflowName}.</p></div>
           <button type="button" onClick={() => setView('impact')}>Test this risk</button>
         </section>
       ) : null}
@@ -97,7 +102,7 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
       {view === 'map' ? (
         <Suspense fallback={<p className="editor-state">Opening the organization map…</p>}><OrganizationCanvas workspaceId={workspaceId} catalog={catalog} initialFocus={isTemplateClone} onOpenInventory={() => openInventory()} onOpenWorkflows={() => openInventory('workflows')} onTestImpact={() => setView('impact')} /></Suspense>
       ) : view === 'impact' ? (
-        <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} onBackToMap={() => setView('map')} /></Suspense>
+        <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} risks={continuityRisks} isContinuityLoading={continuityQuery.isFetching} continuityError={continuityQuery.error} onRetryContinuity={() => void continuityQuery.refetch()} onBackToMap={() => setView('map')} /></Suspense>
       ) : (
         <>
           <nav className="editor-stages" aria-label="Catalog builder stages">
@@ -242,13 +247,8 @@ function RolesStage({ workspaceId, catalog, onContinue }: EditorStageProps) {
     if (existingRole) setSelectedHolderIds(catalog.members.filter((member) => member.roleIds.includes(existingRole.id)).map((member) => member.id))
   }, [catalog.members, existingRole])
   const mutation = useCatalogMutation(workspaceId, async (input: Parameters<typeof createDraftRole>[1]) => {
-    if (editingId) {
-      const updated = await updateDraftRole(workspaceId, editingId, input)
-      return syncRoleHolders(workspaceId, updated, editingId, selectedHolderIds)
-    }
-    const created = await createDraftRole(workspaceId, input)
-    const role = created.roles.find((candidate) => !catalog.roles.some((existing) => existing.id === candidate.id))
-    return role ? syncRoleHolders(workspaceId, created, role.id, selectedHolderIds) : created
+    if (editingId) return updateDraftRole(workspaceId, editingId, input)
+    return createDraftRole(workspaceId, input)
   }, () => {
     const wasCreatingFirst = !editingId && catalog.roles.length === 0
     setName(''); setDescription(''); setOwnerMemberId(''); setSelectedHolderIds([]); setEditingId(null)
@@ -256,7 +256,13 @@ function RolesStage({ workspaceId, catalog, onContinue }: EditorStageProps) {
   })
   const reuseMutation = useCatalogMutation(workspaceId, async () => {
     if (!existingRole) return catalog
-    return syncRoleHolders(workspaceId, catalog, existingRole.id, selectedHolderIds)
+    return updateDraftRole(workspaceId, existingRole.id, {
+      name: existingRole.name,
+      description: existingRole.description,
+      sensitivity: existingRole.sensitivity,
+      ownerMemberId: existingRole.ownerMemberId,
+      holderMemberIds: selectedHolderIds,
+    })
   }, () => { setName(''); setDescription(''); setSelectedHolderIds([]) })
   const deleteMutation = useCatalogMutation(workspaceId, (roleId: string) => deleteDraftRole(workspaceId, roleId))
 
@@ -266,7 +272,7 @@ function RolesStage({ workspaceId, catalog, onContinue }: EditorStageProps) {
       reuseMutation.mutate(undefined)
       return
     }
-    mutation.mutate({ name: name.trim(), description: description.trim(), sensitivity, ownerMemberId: ownerMemberId || null })
+    mutation.mutate({ name: name.trim(), description: description.trim(), sensitivity, ownerMemberId: ownerMemberId || null, holderMemberIds: selectedHolderIds })
   }
 
   return (
@@ -377,19 +383,6 @@ function MemberMultiSelect({ legend, members, selectedIds, onChange }: {
   )
 }
 
-async function syncRoleHolders(workspaceId: string, catalog: DraftCatalog, roleId: string, selectedHolderIds: string[]) {
-  const selected = new Set(selectedHolderIds)
-  let latest = catalog
-  for (const member of catalog.members) {
-    const currentlyAssigned = member.roleIds.includes(roleId)
-    const shouldBeAssigned = selected.has(member.id)
-    if (currentlyAssigned === shouldBeAssigned) continue
-    const roleIds = shouldBeAssigned ? [...member.roleIds, roleId] : member.roleIds.filter((id) => id !== roleId)
-    latest = await replaceMemberRoles(workspaceId, member.id, roleIds)
-  }
-  return latest
-}
-
 type EditorProps = { workspaceId: string; catalog: DraftCatalog }
 type EditorStageProps = EditorProps & { onContinue: () => void }
 
@@ -399,6 +392,7 @@ function useCatalogMutation<T>(workspaceId: string, mutationFn: (input: T) => Pr
     mutationFn,
     onSuccess: (catalog) => {
       queryClient.setQueryData(['draft-catalog', workspaceId], catalog)
+      void queryClient.invalidateQueries({ queryKey: ['draft-continuity', workspaceId] })
       onSuccess?.()
     },
   })

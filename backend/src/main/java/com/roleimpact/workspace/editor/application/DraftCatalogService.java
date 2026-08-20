@@ -97,7 +97,9 @@ public class DraftCatalogService {
 	public DraftCatalogResource createRole(UUID workspaceId, RoleRequest request) {
 		requireDraft(workspaceId);
 		if (request.ownerMemberId() != null) requireMember(workspaceId, request.ownerMemberId());
-		mutate(() -> repository.insertRole(workspaceId, request), "A role with this name already exists");
+		requireHolders(workspaceId, request.holderMemberIds());
+		UUID roleId = mutate(() -> repository.insertRole(workspaceId, request), "A role with this name already exists");
+		if (request.holderMemberIds() != null) repository.replaceRoleHolders(roleId, request.holderMemberIds());
 		touch(workspaceId);
 		return repository.findCatalog(workspaceId);
 	}
@@ -119,8 +121,10 @@ public class DraftCatalogService {
 		requireDraft(workspaceId);
 		requireRole(workspaceId, roleId);
 		if (request.ownerMemberId() != null) requireMember(workspaceId, request.ownerMemberId());
+		requireHolders(workspaceId, request.holderMemberIds());
 		mutate(() -> { repository.updateRole(workspaceId, roleId, request); return roleId; },
 				"A role with this name already exists");
+		if (request.holderMemberIds() != null) repository.replaceRoleHolders(roleId, request.holderMemberIds());
 		touch(workspaceId);
 		return repository.findCatalog(workspaceId);
 	}
@@ -214,15 +218,24 @@ public class DraftCatalogService {
 		}
 	}
 
+	private void requireHolders(UUID workspaceId, Set<UUID> holderMemberIds) {
+		if (holderMemberIds == null || repository.countMatchingMembers(workspaceId, holderMemberIds) == holderMemberIds.size()) return;
+		UUID unknownMemberId = holderMemberIds.stream()
+				.filter(memberId -> !repository.memberExists(workspaceId, memberId))
+				.findFirst()
+				.orElseThrow();
+		throw new DraftCatalogNotFoundException("Member", unknownMemberId);
+	}
+
 	private void requireCoverage(int minimumActors, int resilienceTarget) {
 		if (resilienceTarget < minimumActors) {
 			throw new DraftCatalogConflictException("Healthy coverage cannot be lower than the minimum people required");
 		}
 	}
 
-	private void mutate(Supplier<UUID> mutation, String conflictMessage) {
+	private UUID mutate(Supplier<UUID> mutation, String conflictMessage) {
 		try {
-			mutation.get();
+			return mutation.get();
 		}
 		catch (DataIntegrityViolationException exception) {
 			throw new DraftCatalogConflictException(conflictMessage);
