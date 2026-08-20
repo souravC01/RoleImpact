@@ -157,30 +157,7 @@ describe('App', () => {
 
   it('creates an inventory role with its complete holder set in one role request', async () => {
     const user = userEvent.setup()
-    let catalog: DraftCatalog = structuredClone(clonedCatalogFixture)
-    const roleRequests: Array<{ holderMemberIds?: string[] }> = []
-    const memberRoleRequests: string[] = []
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-      const url = input.toString()
-      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
-      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
-      if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
-      if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse([])
-      if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
-        const role = JSON.parse(String(init.body)) as { name: string; description: string; sensitivity: DraftCatalog['roles'][number]['sensitivity']; ownerMemberId: string | null; holderMemberIds?: string[] }
-        roleRequests.push(role)
-        catalog = applyRoleHolders({
-          ...catalog,
-          roles: [...catalog.roles, { id: 'role-release', name: role.name, description: role.description, sensitivity: role.sensitivity, ownerMemberId: role.ownerMemberId, memberCount: 0 }],
-        }, 'role-release', role.holderMemberIds)
-        return jsonResponse(catalog)
-      }
-      if (url.match(/\/members\/[^/]+\/roles$/) && init?.method === 'PUT') {
-        memberRoleRequests.push(url)
-        return jsonResponse(catalog)
-      }
-      return new Response(null, { status: 404 })
-    })
+    const requests = mockEditableClone(clonedCatalogFixture)
 
     renderApp()
     await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
@@ -192,8 +169,75 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Add shared role & continue' }))
 
     expect((await screen.findAllByText(/Release Manager/)).length).toBeGreaterThan(0)
-    expect(roleRequests).toEqual([expect.objectContaining({ holderMemberIds: ['member-priya'] })])
-    expect(memberRoleRequests).toEqual([])
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('updates an inventory role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Detailed inventory' }))
+    await user.click(screen.getByRole('button', { name: /Roles/ }))
+    const financeRole = screen.getByText('Finance Approver', { selector: 'strong' }).closest('article')
+    expect(financeRole).not.toBeNull()
+    await user.click(within(financeRole!).getByRole('button', { name: 'Edit' }))
+    await user.selectOptions(screen.getByLabelText('Sensitivity'), 'HIGH')
+    await user.click(screen.getByRole('button', { name: 'Save role and holders' }))
+
+    expect(await screen.findByText(/HIGH · 1 holders/)).toBeInTheDocument()
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('quick-creates a map role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Role' }))
+    await user.type(screen.getByLabelText('Role name'), 'Release Manager')
+    await user.click(screen.getByRole('checkbox', { name: 'Priya Sharma' }))
+    await user.click(screen.getByRole('button', { name: 'Create role' }))
+
+    expect(await screen.findByText('Role created')).toBeInTheDocument()
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'POST')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('reuses a map role with its complete holder set in one role request', async () => {
+    const user = userEvent.setup()
+    const requests = mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Role' }))
+    await user.type(screen.getByLabelText('Role name'), 'Finance Approver')
+    expect(screen.getByRole('checkbox', { name: 'Priya Sharma' })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Assign existing role' }))
+
+    expect(await screen.findByText('Role assigned')).toBeInTheDocument()
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(1)
+    expect(requests.roleRequests.filter((request) => request.method === 'PUT')[0].body.holderMemberIds).toEqual(['member-priya'])
+    expect(requests.memberRoleRequests).toEqual([])
+  })
+
+  it('preselects current holders before reusing a map role', async () => {
+    const user = userEvent.setup()
+    mockEditableClone(clonedCatalogFixture)
+
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Role' }))
+    await user.type(screen.getByLabelText('Role name'), 'Finance Approver')
+
+    expect(screen.getByRole('checkbox', { name: 'Priya Sharma' })).toBeChecked()
   })
 
   it('opens impact testing after a deferred continuity projection resolves', async () => {
@@ -346,7 +390,8 @@ describe('App', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Maya Singh' }))
     await user.click(screen.getByRole('button', { name: 'Create role' }))
     expect(await screen.findByText('Role created')).toBeInTheDocument()
-    expect(roleRequests).toContainEqual({ method: 'POST', body: expect.objectContaining({ holderMemberIds: ['member-1'] }) })
+    expect(roleRequests.filter((request) => request.method === 'POST')).toHaveLength(1)
+    expect(roleRequests.filter((request) => request.method === 'POST')[0].body.holderMemberIds).toEqual(['member-1'])
     expect(memberRoleRequests).toHaveLength(0)
 
     expect(within(screen.getByLabelText('Organization inventory')).queryByRole('button', { name: 'Delete object' })).not.toBeInTheDocument()
@@ -445,7 +490,8 @@ describe('App', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Arjun Mehta' }))
     await user.click(screen.getByRole('button', { name: 'Assign existing role' }))
     expect(await screen.findByText('Role assigned')).toBeInTheDocument()
-    expect(roleRequests).toContainEqual({ method: 'PUT', body: expect.objectContaining({ holderMemberIds: ['member-1', 'member-2'] }) })
+    expect(roleRequests.filter((request) => request.method === 'PUT')).toHaveLength(1)
+    expect(roleRequests.filter((request) => request.method === 'PUT')[0].body.holderMemberIds).toEqual(['member-1', 'member-2'])
     expect(memberRoleRequests).toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: 'Detailed inventory' }))
@@ -496,6 +542,62 @@ function applyRoleHolders(catalog: DraftCatalog, roleId: string, holderMemberIds
     members,
     roles: catalog.roles.map((role) => ({ ...role, memberCount: members.filter((member) => member.roleIds.includes(role.id)).length })),
   }
+}
+
+type RoleMutationRequest = {
+  method: 'POST' | 'PUT'
+  body: {
+    name: string
+    description: string
+    sensitivity: DraftCatalog['roles'][number]['sensitivity']
+    ownerMemberId: string | null
+    holderMemberIds?: string[]
+  }
+}
+
+function mockEditableClone(initialCatalog: DraftCatalog) {
+  let catalog = structuredClone(initialCatalog)
+  const roleRequests: RoleMutationRequest[] = []
+  const memberRoleRequests: string[] = []
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = input.toString()
+    if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
+    if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+    if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
+    if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse([])
+    if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as RoleMutationRequest['body']
+      roleRequests.push({ method: 'POST', body })
+      catalog = applyRoleHolders({
+        ...catalog,
+        roles: [...catalog.roles, { id: 'role-release', name: body.name, description: body.description, sensitivity: body.sensitivity, ownerMemberId: body.ownerMemberId, memberCount: 0 }],
+      }, 'role-release', body.holderMemberIds)
+      return jsonResponse(catalog)
+    }
+    const roleMatch = url.match(/\/catalog\/roles\/([^/]+)$/)
+    if (roleMatch && init?.method === 'PUT') {
+      const body = JSON.parse(String(init.body)) as RoleMutationRequest['body']
+      const roleId = roleMatch[1]
+      roleRequests.push({ method: 'PUT', body })
+      catalog = applyRoleHolders({
+        ...catalog,
+        roles: catalog.roles.map((role) => role.id === roleId ? {
+          ...role,
+          name: body.name,
+          description: body.description,
+          sensitivity: body.sensitivity,
+          ownerMemberId: body.ownerMemberId,
+        } : role),
+      }, roleId, body.holderMemberIds)
+      return jsonResponse(catalog)
+    }
+    if (url.match(/\/members\/[^/]+\/roles$/) && init?.method === 'PUT') {
+      memberRoleRequests.push(url)
+      return jsonResponse(catalog)
+    }
+    return new Response(null, { status: 404 })
+  })
+  return { roleRequests, memberRoleRequests }
 }
 
 const workspaceFixture = [
