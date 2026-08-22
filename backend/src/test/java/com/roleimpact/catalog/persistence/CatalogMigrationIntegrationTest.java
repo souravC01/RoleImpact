@@ -75,6 +75,26 @@ class CatalogMigrationIntegrationTest {
 	private ObjectMapper objectMapper;
 
 	@Test
+	void assignsPublicCodesAndRemovesCloneMetadata() {
+		var publicCodes = jdbcClient.sql("SELECT public_code FROM organizations ORDER BY id")
+				.query(String.class)
+				.list();
+		var cloneColumnCount = jdbcClient.sql("""
+				SELECT COUNT(*)
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = 'organizations'
+				  AND column_name = 'source_template_organization_id'
+				""").query(Integer.class).single();
+
+		assertThat(publicCodes).isNotEmpty()
+				.allSatisfy(code -> assertThat(code).matches("[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{6}"));
+		assertThat(publicCodes.stream().map(String::toUpperCase).distinct().count())
+				.isEqualTo(publicCodes.size());
+		assertThat(cloneColumnCount).isZero();
+	}
+
+	@Test
 	void appliesSchemaAndLoadsTheCompleteHarborlineBaseline() {
 		assertThat(count("organizations")).isEqualTo(1);
 		assertThat(count("teams")).isEqualTo(5);
@@ -95,7 +115,7 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(6);
+		assertThat(successfulMigrations).isEqualTo(7);
 		var employeeNumberNullable = jdbcClient.sql("""
 				SELECT is_nullable
 				FROM information_schema.columns
