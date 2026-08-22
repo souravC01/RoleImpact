@@ -4,7 +4,7 @@ export type Workspace = {
   name: string
   status: 'DRAFT' | 'PUBLISHED'
   currentVersion: number
-  sourceTemplateOrganizationId: string | null
+  publicCode: string
   createdAt: string
   updatedAt: string
   counts: {
@@ -24,9 +24,20 @@ type WorkspaceInput = {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
-export async function fetchWorkspaces(signal?: AbortSignal): Promise<Workspace[]> {
-  const response = await fetch(`${apiBaseUrl}/api/v1/workspaces`, { signal })
-  return readResponse(response, 'Workspace list could not be loaded')
+export function normalizeWorkspaceCode(rawCode: string): string | null {
+  const candidate = rawCode.trim().toUpperCase()
+  if (/^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{16}$/.test(candidate)) return candidate
+  if (/^[A-HJ-NP-Z2-9]{19}$/.test(candidate)) return `${candidate.slice(0, 3)}-${candidate.slice(3)}`
+  if (/^[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}$/.test(candidate)) return candidate
+  if (/^[A-HJ-NP-Z2-9]{3}[A-F0-9]{32}$/.test(candidate)) return `${candidate.slice(0, 3)}-${candidate.slice(3)}`
+  return null
+}
+
+export async function fetchWorkspaceByCode(rawCode: string, signal?: AbortSignal): Promise<Workspace> {
+  const code = normalizeWorkspaceCode(rawCode)
+  if (!code) throw new Error('Paste the complete organization ID from your saved link')
+  const response = await fetch(`${apiBaseUrl}/api/v1/workspaces/by-code/${code}`, { signal })
+  return readResponse(response, 'Organization not found')
 }
 
 export async function createWorkspace(input: WorkspaceInput): Promise<Workspace> {
@@ -35,16 +46,7 @@ export async function createWorkspace(input: WorkspaceInput): Promise<Workspace>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
-  return readResponse(response, 'Workspace could not be created')
-}
-
-export async function cloneWorkspace(sourceWorkspaceId: string, input: WorkspaceInput): Promise<Workspace> {
-  const response = await fetch(`${apiBaseUrl}/api/v1/workspaces/${sourceWorkspaceId}/clones`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  })
-  return readResponse(response, 'Workspace could not be cloned')
+  return readResponse(response, 'Organization could not be created')
 }
 
 async function readResponse<T>(response: Response, fallbackMessage: string): Promise<T> {

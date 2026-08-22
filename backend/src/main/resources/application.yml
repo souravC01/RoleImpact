@@ -12,7 +12,13 @@ spring:
   flyway:
     enabled: true
 
+bootui:
+  enabled: false
+
 management:
+  endpoint:
+    health:
+      show-details: never
   endpoints:
     web:
       exposure:

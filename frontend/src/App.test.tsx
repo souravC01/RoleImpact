@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { DraftCatalog } from './api/draftCatalog'
@@ -13,17 +14,26 @@ afterEach(() => {
   localStorage.clear()
 })
 
-function renderApp() {
+function renderApp(initialEntries = ['/']) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>,
+    <MemoryRouter initialEntries={initialEntries}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </MemoryRouter>,
   )
 }
+
+const harborlineCode = 'HBR-0123456789ABCDEF0123456789ABCDEF'
+const editableCode = 'HCS-1123456789ABCDEF0123456789ABCDEF'
+const blankCode = 'ATS-2123456789ABCDEF0123456789ABCDEF'
+const editableMapRoute = `/organizations/${editableCode}/map`
+const editableInventoryRoute = `/organizations/${editableCode}/inventory`
+const editableImpactRoute = `/organizations/${editableCode}/impact`
 
 describe('App', () => {
   it('renders the seeded organization dashboard', async () => {
@@ -129,28 +139,26 @@ describe('App', () => {
     expect(screen.getByLabelText('Graph state legend')).toHaveTextContent('Restored')
   })
 
-  it('clones the example into an isolated editable draft', async () => {
+  it('opens an editable organization from its stable route', async () => {
     const user = userEvent.setup()
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = input.toString()
-      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
-      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith(`/api/v1/workspaces/by-code/${editableCode}`)) return jsonResponse(clonedWorkspaceFixture)
       if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
+      if (url.endsWith('/impact-previews/continuity')) return jsonResponse([])
       return new Response(null, { status: 404 })
     })
 
-    renderApp()
-
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    renderApp([editableMapRoute])
 
     expect(await screen.findByRole('heading', { name: 'Harborline Sandbox' })).toBeInTheDocument()
-    expect(screen.getByText('Draft · not yet published')).toBeInTheDocument()
-    expect(screen.getByText(/fresh identity/)).toBeInTheDocument()
-    expect(screen.getByLabelText('Draft catalog summary')).toHaveTextContent('1members')
+    expect(screen.getByText('Editable organization')).toBeInTheDocument()
+    expect(screen.getByText(/return later using the organization ID or link/)).toBeInTheDocument()
+    expect(await screen.findByLabelText('Draft catalog summary')).toHaveTextContent('1members')
     expect(await screen.findByRole('heading', { name: 'Map how your organization works' })).toBeInTheDocument()
     expect(await screen.findByLabelText('Organization relationship canvas')).toBeInTheDocument()
     expect(screen.getByLabelText('Organization inventory')).toHaveTextContent('Finance Approver')
-    expect(screen.getByRole('button', { name: 'Show full map' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Fit graph' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Detailed inventory' }))
     expect(screen.getByRole('button', { name: /Teams/ })).toHaveAttribute('aria-current', 'step')
   })
@@ -159,9 +167,8 @@ describe('App', () => {
     const user = userEvent.setup()
     const requests = mockEditableClone(clonedCatalogFixture)
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
-    await user.click(await screen.findByRole('button', { name: 'Detailed inventory' }))
+    renderApp([editableInventoryRoute])
+    await screen.findByRole('button', { name: 'Detailed inventory' })
     await user.click(screen.getByRole('button', { name: /Roles/ }))
     await user.type(screen.getByLabelText('Role name'), 'Release Manager')
     await user.type(screen.getByLabelText('Description'), 'Approves production releases')
@@ -178,9 +185,8 @@ describe('App', () => {
     const user = userEvent.setup()
     const requests = mockEditableClone(clonedCatalogFixture)
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
-    await user.click(await screen.findByRole('button', { name: 'Detailed inventory' }))
+    renderApp([editableInventoryRoute])
+    await screen.findByRole('button', { name: 'Detailed inventory' })
     await user.click(screen.getByRole('button', { name: /Roles/ }))
     const financeRole = screen.getByText('Finance Approver', { selector: 'strong' }).closest('article')
     expect(financeRole).not.toBeNull()
@@ -198,8 +204,8 @@ describe('App', () => {
     const user = userEvent.setup()
     const requests = mockEditableClone(clonedCatalogFixture)
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    renderApp([editableMapRoute])
+    await screen.findByRole('button', { name: 'Add Role' })
     await user.click(await screen.findByRole('button', { name: 'Add Role' }))
     await user.type(screen.getByLabelText('Role name'), 'Release Manager')
     await user.click(screen.getByRole('checkbox', { name: 'Priya Sharma' }))
@@ -215,8 +221,8 @@ describe('App', () => {
     const user = userEvent.setup()
     const requests = mockEditableClone(clonedCatalogFixture)
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    renderApp([editableMapRoute])
+    await screen.findByRole('button', { name: 'Add Role' })
     await user.click(await screen.findByRole('button', { name: 'Add Role' }))
     await user.type(screen.getByLabelText('Role name'), 'Finance Approver')
     expect(screen.getByRole('checkbox', { name: 'Priya Sharma' })).toBeChecked()
@@ -232,8 +238,8 @@ describe('App', () => {
     const user = userEvent.setup()
     mockEditableClone(clonedCatalogFixture)
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
+    renderApp([editableMapRoute])
+    await screen.findByRole('button', { name: 'Add Role' })
     await user.click(await screen.findByRole('button', { name: 'Add Role' }))
     await user.type(screen.getByLabelText('Role name'), 'Finance Approver')
 
@@ -241,26 +247,24 @@ describe('App', () => {
   })
 
   it('opens impact testing after a deferred continuity projection resolves', async () => {
-    const user = userEvent.setup()
     const projection = deferred<Response>()
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = input.toString()
-      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
-      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith(`/api/v1/workspaces/by-code/${editableCode}`)) return jsonResponse(clonedWorkspaceFixture)
       if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
       if (url.endsWith('/impact-previews/continuity') && !init?.method) return projection.promise
       return new Response(null, { status: 404 })
     })
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
-    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    renderApp([editableImpactRoute])
     expect(await screen.findByRole('heading', { name: 'Loading continuity analysis' })).toBeInTheDocument()
 
     projection.resolve(jsonResponse(clonedContinuityFixture))
 
     expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Vendor Payment.*would block/ })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Harborline Sandbox' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Organization builder')).not.toBeInTheDocument()
   })
 
   it('opens impact testing after retrying a failed continuity projection', async () => {
@@ -268,8 +272,7 @@ describe('App', () => {
     let continuityAttempts = 0
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = input.toString()
-      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
-      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith(`/api/v1/workspaces/by-code/${editableCode}`)) return jsonResponse(clonedWorkspaceFixture)
       if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
       if (url.endsWith('/impact-previews/continuity') && !init?.method) {
         continuityAttempts += 1
@@ -280,9 +283,7 @@ describe('App', () => {
       return new Response(null, { status: 404 })
     })
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
-    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    renderApp([editableImpactRoute])
     expect(await screen.findByRole('heading', { name: 'Continuity analysis is unavailable' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Retry continuity analysis' }))
@@ -292,7 +293,6 @@ describe('App', () => {
   })
 
   it('renders a degraded engine verdict with the warning continuity treatment', async () => {
-    const user = userEvent.setup()
     const degradedContinuity = clonedContinuityFixture.map((risk) => ({
       ...risk,
       members: risk.members.map((member) => ({
@@ -303,16 +303,13 @@ describe('App', () => {
     }))
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = input.toString()
-      if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
-      if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+      if (url.endsWith(`/api/v1/workspaces/by-code/${editableCode}`)) return jsonResponse(clonedWorkspaceFixture)
       if (url.endsWith('/catalog')) return jsonResponse(clonedCatalogFixture)
       if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse(degradedContinuity)
       return new Response(null, { status: 404 })
     })
 
-    renderApp()
-    await user.click(await screen.findByRole('button', { name: 'Clone and customize' }))
-    await user.click(await screen.findByRole('button', { name: 'Test impact' }))
+    renderApp([editableImpactRoute])
 
     const heading = await screen.findByText('This workflow would lose resilience')
     const signal = heading.closest('.continuity-signal')
@@ -330,6 +327,7 @@ describe('App', () => {
       const url = input.toString()
       if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
       if (url.endsWith('/api/v1/workspaces') && init?.method === 'POST') return jsonResponse(blankWorkspaceFixture, 201)
+      if (url.endsWith(`/api/v1/workspaces/by-code/${blankCode}`)) return jsonResponse(blankWorkspaceFixture)
       if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
       if (url.endsWith('/impact-previews/continuity') && !init?.method) {
         continuityRequests += 1
@@ -411,6 +409,11 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Create member' }))
     expect(await screen.findByText('Member created')).toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: 'Add Member' }))
+    await user.type(screen.getByLabelText('Member name'), 'Neha Kapoor')
+    await user.click(screen.getByRole('button', { name: 'Create member' }))
+    expect(await screen.findByText('Member created')).toBeInTheDocument()
+
     await user.click(screen.getByRole('button', { name: 'Add Role' }))
     await user.type(screen.getByLabelText('Role name'), 'Release Manager')
     await user.selectOptions(screen.getByLabelText('Sensitivity'), 'HIGH')
@@ -437,10 +440,11 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Organization map' }))
     expect(screen.getByLabelText('Organization inventory')).toHaveTextContent('Production Deployment')
     expect(screen.getByLabelText('Organization relationship canvas')).toBeInTheDocument()
-    expect(screen.getByText('6 objects · 5 connections')).toBeInTheDocument()
+    expect(screen.getByText('7 objects · 6 connections')).toBeInTheDocument()
     expect(screen.getByLabelText('Team Platform')).toBeInTheDocument()
     expect(screen.getByLabelText('Member Maya Singh')).toBeInTheDocument()
     expect(screen.getByLabelText('Member Arjun Mehta')).toBeInTheDocument()
+    expect(screen.getByLabelText('Member Neha Kapoor')).toBeInTheDocument()
     expect(screen.getByLabelText('Role Release Manager')).toBeInTheDocument()
     expect(screen.getByLabelText('Responsibility Release Manager responsibility')).toBeInTheDocument()
     expect(screen.getByLabelText('Workflow Production Deployment')).toBeInTheDocument()
@@ -463,7 +467,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Organization map' }))
 
     await user.click(screen.getByRole('button', { name: 'Test this risk' }))
-    expect(await screen.findByRole('heading', { name: 'Test a change before it happens' })).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Test impact workspace' })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Test impact map' })).toBeInTheDocument()
     expect(await screen.findByLabelText('Complete organization impact map')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Show full map' }))
@@ -481,6 +485,9 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Fit selection' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Clear selection' }))
     expect(screen.queryByRole('button', { name: 'Fit selection' })).not.toBeInTheDocument()
+    const scenarioComposer = screen.getByRole('region', { name: 'Choose what to test' })
+    await user.click(within(scenarioComposer).getByRole('button', { name: /Release Manager responsibility/ }))
+    expect(screen.getByLabelText('Selected Responsibility Release Manager responsibility')).toHaveTextContent('Eligible now')
     const mayaImpactActions = document.querySelector<HTMLButtonElement>('button[aria-label="Impact actions for Maya Singh"]')
     const arjunImpactActions = document.querySelector<HTMLButtonElement>('button[aria-label="Impact actions for Arjun Mehta"]')
     expect(mayaImpactActions).toBeInTheDocument()
@@ -497,8 +504,19 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'A workflow would be blocked' })).toBeInTheDocument()
     expect(screen.getByLabelText('Complete organization impact map')).toBeInTheDocument()
     expect(screen.getByLabelText(/member Arjun Mehta.*Recommended #1/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/member Neha Kapoor.*Recommended #2/i)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reset to baseline' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Test a safe replacement' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Recommended replacement' })).toBeInTheDocument()
+    expect(screen.getByText('Best aligned · same team')).toBeInTheDocument()
+    expect(screen.getByText(/Ranked #1 because Arjun Mehta is in the same team as Maya Singh/)).toBeInTheDocument()
+    const alternatives = screen.getByRole('group', { name: 'Alternative replacements' })
+    expect(within(alternatives).getByText('1 alternative')).toBeInTheDocument()
+    expect(alternatives).not.toHaveAttribute('open')
+    await user.click(within(alternatives).getByText('1 alternative'))
+    expect(alternatives).toHaveAttribute('open')
+    expect(within(alternatives).getByText('Neha Kapoor')).toBeInTheDocument()
+    expect(within(alternatives).getByText(/adds another dependency/i)).toBeInTheDocument()
+    expect(within(alternatives).queryByRole('button')).not.toBeInTheDocument()
     fireEvent.click(screen.getByLabelText(/member Arjun Mehta.*Recommended #1/i))
     const selectedArjun = screen.getByLabelText('Selected Member Arjun Mehta')
     await user.click(within(selectedArjun).getByRole('button', { name: 'Try as replacement for Release Manager' }))
@@ -593,8 +611,7 @@ function mockEditableClone(initialCatalog: DraftCatalog) {
   const memberRoleRequests: string[] = []
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = input.toString()
-    if (url.endsWith('/api/v1/workspaces') && !init?.method) return jsonResponse(workspaceFixture)
-    if (url.endsWith('/clones') && init?.method === 'POST') return jsonResponse(clonedWorkspaceFixture, 201)
+    if (url.endsWith(`/api/v1/workspaces/by-code/${editableCode}`)) return jsonResponse(clonedWorkspaceFixture)
     if (url.endsWith('/catalog') && !init?.method) return jsonResponse(catalog)
     if (url.endsWith('/impact-previews/continuity') && !init?.method) return jsonResponse([])
     if (url.endsWith('/catalog/roles') && init?.method === 'POST') {
@@ -639,7 +656,7 @@ const workspaceFixture = [
     name: 'Harborline Commerce',
     status: 'PUBLISHED',
     currentVersion: 1,
-    sourceTemplateOrganizationId: null,
+    publicCode: harborlineCode,
     createdAt: '2026-08-12T20:00:00Z',
     updatedAt: '2026-08-12T20:00:00Z',
     counts: { teams: 5, members: 25, roles: 8, permissions: 23, capabilities: 10, workflows: 4 },
@@ -653,7 +670,7 @@ const clonedWorkspaceFixture = {
   name: 'Harborline Sandbox',
   status: 'DRAFT',
   currentVersion: 0,
-  sourceTemplateOrganizationId: workspaceFixture[0].id,
+  publicCode: editableCode,
 }
 
 const blankWorkspaceFixture = {
@@ -663,7 +680,7 @@ const blankWorkspaceFixture = {
   name: 'Atlas Systems',
   status: 'DRAFT',
   currentVersion: 0,
-  sourceTemplateOrganizationId: null,
+  publicCode: blankCode,
   counts: { teams: 0, members: 0, roles: 0, permissions: 0, capabilities: 0, workflows: 0 },
 }
 
@@ -1011,6 +1028,15 @@ const customDraftImpactFixture: DraftImpactResult = {
       ...(simulationFixture.result.recommendations[0] as DraftImpactResult['recommendations'][number]),
       id: 'recommendation-1',
       candidate: { id: 'member-2', name: 'Arjun Mehta' },
+      role: { id: 'role-1', name: 'Release Manager' },
+      restoredWorkflows: [{ id: 'workflow-1', name: 'Production Deployment' }],
+      restoredWorkflowSteps: [{ id: 'requirement-1', name: 'Release Manager responsibility' }],
+    },
+    {
+      ...(simulationFixture.result.recommendations[0] as DraftImpactResult['recommendations'][number]),
+      id: 'recommendation-2',
+      rank: 2,
+      candidate: { id: 'member-3', name: 'Neha Kapoor' },
       role: { id: 'role-1', name: 'Release Manager' },
       restoredWorkflows: [{ id: 'workflow-1', name: 'Production Deployment' }],
       restoredWorkflowSteps: [{ id: 'requirement-1', name: 'Release Manager responsibility' }],

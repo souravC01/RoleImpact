@@ -1,36 +1,33 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { fetchDashboard } from './api/dashboard'
 import { runMitigationBranch, runPrimarySimulation } from './api/simulations'
-import type { Workspace } from './api/workspaces'
 import WorkspaceWelcome from './components/workspaces/WorkspaceWelcome'
-import DraftWorkspace from './components/workspaces/DraftWorkspace'
+import OrganizationRoute from './components/workspaces/OrganizationRoute'
 import './App.css'
 
 const ImpactGraph = lazy(() => import('./components/ImpactGraph'))
 
-type AppView = { page: 'home' } | { page: 'example' } | { page: 'draft'; workspace: Workspace }
-
 export default function App() {
-  const [view, setView] = useState<AppView>({ page: 'home' })
-
-  if (view.page === 'home') {
-    return (
-      <WorkspaceWelcome
-        onExploreTemplate={() => setView({ page: 'example' })}
-        onOpenDraft={(workspace) => setView({ page: 'draft', workspace })}
-      />
-    )
-  }
-
-  if (view.page === 'draft') {
-    return <DraftWorkspace workspace={view.workspace} onBack={() => setView({ page: 'home' })} />
-  }
-
-  return <HarborlineDashboard onBack={() => setView({ page: 'home' })} />
+  return (
+    <Routes>
+      <Route path="/" element={<WorkspaceWelcome />} />
+      <Route path="/example" element={<HarborlineDashboard />} />
+      <Route path="/organizations/:publicCode" element={<OrganizationIndexRedirect />} />
+      <Route path="/organizations/:publicCode/:view" element={<OrganizationRoute />} />
+      <Route path="*" element={<Navigate replace to="/" />} />
+    </Routes>
+  )
 }
 
-function HarborlineDashboard({ onBack }: { onBack: () => void }) {
+function OrganizationIndexRedirect() {
+  const { publicCode = '' } = useParams()
+  return <Navigate replace to={`/organizations/${publicCode}/map`} />
+}
+
+function HarborlineDashboard() {
+  const navigate = useNavigate()
   const dashboardQuery = useQuery({
     queryKey: ['dashboard', 'harborline-commerce'],
     queryFn: ({ signal }) => fetchDashboard(signal),
@@ -79,7 +76,7 @@ function HarborlineDashboard({ onBack }: { onBack: () => void }) {
   return (
     <div className="dashboard-shell">
       <header className="topbar">
-        <button className="brand brand-button" type="button" onClick={onBack} aria-label="Back to workspaces">
+        <button className="brand brand-button" type="button" onClick={() => navigate('/')} aria-label="Back to workspaces">
           <span className="brand-mark" aria-hidden="true">R</span>
           <span>RoleImpact</span>
         </button>

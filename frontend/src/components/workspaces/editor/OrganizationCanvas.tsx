@@ -37,7 +37,7 @@ import FullOrganizationImpactCanvas, { type FullOrganizationImpactCanvasProps } 
 
 type EntityType = 'team' | 'member' | 'role' | 'workflow'
 type GraphEntityType = EntityType | 'responsibility'
-export type OrganizationSimulationState = 'source' | 'candidate' | 'unsafe' | 'removed' | 'blocked' | 'degraded' | 'restored'
+export type OrganizationSimulationState = 'source' | 'candidate' | 'unsafe' | 'removed' | 'blocked' | 'degraded' | 'operational' | 'restored'
 export type CanvasNodeData = {
   label: string
   entityType: GraphEntityType
@@ -715,6 +715,8 @@ function focusedNodeIds(catalog: DraftCatalog, workflowId: string) {
     ids.add(nodeId('member', member.id))
     ids.add(nodeId('team', member.teamId))
   })
+  const participatingTeamIds = new Set(catalog.teams.filter((team) => ids.has(nodeId('team', team.id))).map((team) => team.id))
+  catalog.members.filter((member) => participatingTeamIds.has(member.teamId)).forEach((member) => ids.add(nodeId('member', member.id)))
   return ids
 }
 

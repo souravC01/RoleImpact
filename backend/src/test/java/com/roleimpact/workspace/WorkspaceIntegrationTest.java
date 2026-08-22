@@ -16,15 +16,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
@@ -35,7 +35,7 @@ class WorkspaceIntegrationTest {
 
 	@Container
 	@ServiceConnection
-	static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+	static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine")
 			.withDatabaseName("roleimpact")
 			.withUsername("roleimpact")
 			.withPassword("roleimpact");
@@ -50,90 +50,56 @@ class WorkspaceIntegrationTest {
 	private JdbcClient jdbcClient;
 
 	@Test
-	void createsBlankAndClonedDraftsWithoutChangingThePublishedTemplate() throws Exception {
-		mockMvc.perform(get("/api/v1/workspaces"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].id").value(HARBORLINE_ID.toString()))
-				.andExpect(jsonPath("$[0].status").value("PUBLISHED"))
-				.andExpect(jsonPath("$[0].currentVersion").value(1))
-				.andExpect(jsonPath("$[0].counts.members").value(25))
-				.andExpect(jsonPath("$[0].counts.workflows").value(4));
-
+	void createsAndResolvesAnEditableDraftByPublicCode() throws Exception {
 		var blankResponse = mockMvc.perform(post("/api/v1/workspaces")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(workspaceRequest("Northstar Labs", null)))
+						.content(workspaceRequest("Northstar Medical Supplies", null)))
 				.andExpect(status().isCreated())
-				.andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/workspaces/")))
-				.andExpect(jsonPath("$.slug").value("northstar-labs"))
+				.andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/workspaces/by-code/")))
+				.andExpect(jsonPath("$.slug").value("northstar-medical-supplies"))
 				.andExpect(jsonPath("$.status").value("DRAFT"))
 				.andExpect(jsonPath("$.currentVersion").value(0))
-				.andExpect(jsonPath("$.sourceTemplateOrganizationId").doesNotExist())
+				.andExpect(jsonPath("$.publicCode")
+						.value(org.hamcrest.Matchers.matchesPattern("NMS-[A-HJ-NP-Z2-9]{16}")))
 				.andExpect(jsonPath("$.counts.members").value(0))
 				.andExpect(jsonPath("$.counts.workflows").value(0))
 				.andReturn();
-		UUID blankId = responseId(blankResponse.getResponse().getContentAsString());
+		var blankJson = objectMapper.readTree(blankResponse.getResponse().getContentAsString());
+		UUID blankId = UUID.fromString(blankJson.path("id").asText());
+		String publicCode = blankJson.path("publicCode").asText();
 
-		var cloneResponse = mockMvc.perform(post("/api/v1/workspaces/{sourceWorkspaceId}/clones", HARBORLINE_ID)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(workspaceRequest("Harborline Sandbox", "harborline-sandbox")))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.status").value("DRAFT"))
-				.andExpect(jsonPath("$.currentVersion").value(0))
-				.andExpect(jsonPath("$.sourceTemplateOrganizationId").value(HARBORLINE_ID.toString()))
-				.andExpect(jsonPath("$.counts.teams").value(5))
-				.andExpect(jsonPath("$.counts.members").value(25))
-				.andExpect(jsonPath("$.counts.roles").value(8))
-				.andExpect(jsonPath("$.counts.permissions").value(23))
-				.andExpect(jsonPath("$.counts.capabilities").value(10))
-				.andExpect(jsonPath("$.counts.workflows").value(4))
-				.andReturn();
-		UUID cloneId = responseId(cloneResponse.getResponse().getContentAsString());
-
-		mockMvc.perform(get("/api/v1/workspaces/{workspaceId}", cloneId))
+		mockMvc.perform(get("/api/v1/workspaces/by-code/{publicCode}", publicCode.toLowerCase()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.slug").value("harborline-sandbox"));
+				.andExpect(jsonPath("$.id").value(blankId.toString()))
+				.andExpect(jsonPath("$.publicCode").value(publicCode));
 
 		assertThat(workspaceState(HARBORLINE_ID)).isEqualTo("PUBLISHED|1");
 		assertThat(workspaceState(blankId)).isEqualTo("DRAFT|0");
-		assertThat(workspaceState(cloneId)).isEqualTo("DRAFT|0");
-		assertThat(countOrganizationVersions(cloneId)).isZero();
-		assertThat(countSharedEmployeeIds(HARBORLINE_ID, cloneId)).isZero();
-		assertThat(countNamedEmployees(cloneId, "Priya Sharma")).isOne();
+	}
 
-		var clonedCatalog = mockMvc.perform(get("/api/v1/workspaces/{workspaceId}/catalog", cloneId))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.workflows[?(@.name == 'Vendor Payment')].requirements[?(@.name == 'High-Value Payment Approval')]").exists())
-				.andReturn();
-		var catalogJson = objectMapper.readTree(clonedCatalog.getResponse().getContentAsString());
-		UUID priyaId = findId(catalogJson, "members", "Priya Sharma");
-		UUID aishaId = findId(catalogJson, "members", "Aisha Khan");
-		UUID sofiaId = findId(catalogJson, "members", "Sofia Martinez");
-		UUID financeApproverId = findId(catalogJson, "roles", "Finance Approver");
-		UUID seniorSupportId = findId(catalogJson, "roles", "Senior Support");
-		UUID supportAgentId = findId(catalogJson, "roles", "Support Agent");
-		assertPreview(cloneId, priyaId, financeApproverId, "CRITICAL", 1, 1);
-		assertPreview(cloneId, aishaId, seniorSupportId, "MEDIUM", 0, 1);
-		assertPreview(cloneId, sofiaId, supportAgentId, "LOW", 0, 0);
+	@Test
+	void hidesPublishedAndUnknownOrganizationsFromPublicCodeLookup() throws Exception {
+		String harborlinePublicCode = jdbcClient.sql("SELECT public_code FROM organizations WHERE id = :id")
+				.param("id", HARBORLINE_ID)
+				.query(String.class)
+				.single();
 
-		UUID clonedWorkflowId = UUID.fromString(catalogJson
-				.path("workflows").get(0).path("id").asText());
-		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/workflows/{workflowId}", cloneId, clonedWorkflowId))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.workflows.length()").value(3));
-		assertThat(countForOrganization("workflows", cloneId)).isEqualTo(3);
-		assertThat(countForOrganization("workflows", HARBORLINE_ID)).isEqualTo(4);
+		mockMvc.perform(get("/api/v1/workspaces/by-code/{publicCode}", harborlinePublicCode))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/workspaces/by-code/{publicCode}", "BAD-CODE"))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/workspaces/by-code/{publicCode}", "NMS-AAAAAA"))
+				.andExpect(status().isNotFound());
+	}
 
-		mockMvc.perform(post("/api/v1/workspaces")
+	@Test
+	void removesWorkspaceListingAndCloningEndpoints() throws Exception {
+		mockMvc.perform(get("/api/v1/workspaces"))
+				.andExpect(status().isMethodNotAllowed());
+		mockMvc.perform(post("/api/v1/workspaces/{sourceWorkspaceId}/clones", HARBORLINE_ID)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(workspaceRequest("Duplicate", "harborline-sandbox")))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code").value("WORKSPACE_CONFLICT"));
-
-		mockMvc.perform(post("/api/v1/workspaces/{sourceWorkspaceId}/clones", blankId)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(workspaceRequest("Invalid Clone", null)))
-				.andExpect(status().isUnprocessableEntity())
-				.andExpect(jsonPath("$.code").value("INVALID_WORKSPACE"));
+						.content(workspaceRequest("Removed Clone", null)))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -398,7 +364,7 @@ class WorkspaceIntegrationTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"name\":\"Illegal\",\"department\":\"Test\"}"))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("immutable")));
+				.andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("read-only")));
 
 		mockMvc.perform(delete("/api/v1/workspaces/{workspaceId}/catalog/workflows/{workflowId}", workspaceId, workflowId))
 				.andExpect(status().isOk())
@@ -446,50 +412,12 @@ class WorkspaceIntegrationTest {
 		throw new IllegalArgumentException(id + " was not found in " + collection);
 	}
 
-	private void assertPreview(
-			UUID workspaceId,
-			UUID memberId,
-			UUID roleId,
-			String severity,
-			int blocked,
-			int degraded) throws Exception {
-		mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/impact-previews", workspaceId)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"memberId":"%s","roleId":"%s"}
-								""".formatted(memberId, roleId)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.overallSeverity").value(severity))
-				.andExpect(jsonPath("$.executiveSummary.workflowsBlocked").value(blocked))
-				.andExpect(jsonPath("$.executiveSummary.workflowsDegraded").value(degraded));
-	}
-
 	private String workspaceState(UUID id) {
 		return jdbcClient.sql("""
 				SELECT workspace_status || '|' || current_version
 				FROM organizations
 				WHERE id = :id
 				""").param("id", id).query(String.class).single();
-	}
-
-	private int countOrganizationVersions(UUID id) {
-		return jdbcClient.sql("SELECT COUNT(*) FROM organization_versions WHERE organization_id = :id")
-				.param("id", id).query(Integer.class).single();
-	}
-
-	private int countSharedEmployeeIds(UUID sourceId, UUID cloneId) {
-		return jdbcClient.sql("""
-				SELECT COUNT(*)
-				FROM employees source
-				JOIN employees clone ON clone.id = source.id
-				WHERE source.organization_id = :sourceId AND clone.organization_id = :cloneId
-				""").param("sourceId", sourceId).param("cloneId", cloneId).query(Integer.class).single();
-	}
-
-	private int countNamedEmployees(UUID organizationId, String name) {
-		return jdbcClient.sql("""
-				SELECT COUNT(*) FROM employees WHERE organization_id = :organizationId AND name = :name
-				""").param("organizationId", organizationId).param("name", name).query(Integer.class).single();
 	}
 
 	private int countForOrganization(String table, UUID organizationId) {

@@ -12,9 +12,17 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "employees")
+@Table(name = "employees", uniqueConstraints = {
+		@UniqueConstraint(
+				name = "uq_employees_organization_employee_no",
+				columnNames = { "organization_id", "employee_no" }),
+		@UniqueConstraint(
+				name = "uq_employees_organization_email",
+				columnNames = { "organization_id", "email" })
+})
 public class EmployeeEntity {
 
 	@Id
@@ -26,13 +34,13 @@ public class EmployeeEntity {
 	@Column(name = "team_id", nullable = false)
 	private UUID teamId;
 
-	@Column(name = "employee_no", unique = true, length = 40)
+	@Column(name = "employee_no", length = 40)
 	private String employeeNumber;
 
 	@Column(nullable = false, length = 160)
 	private String name;
 
-	@Column(unique = true, length = 254)
+	@Column(length = 254)
 	private String email;
 
 	@Enumerated(EnumType.STRING)

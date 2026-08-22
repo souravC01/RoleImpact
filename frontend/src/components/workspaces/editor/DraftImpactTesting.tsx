@@ -31,6 +31,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, risks, isCont
     : initialRisk?.workflowId ?? ''
   const workflowRisks = testableRisks.filter((risk) => risk.workflowId === selectedWorkflowId)
   const [selectedRiskKeyState, setSelectedRiskKey] = useState(initialRisk?.key ?? '')
+  const [graphSelectionRequest, setGraphSelectionRequest] = useState<{ nodeId: string; requestId: number } | null>(null)
   const selectedRiskKey = workflowRisks.some((risk) => risk.key === selectedRiskKeyState)
     ? selectedRiskKeyState
     : workflowRisks[0]?.key ?? ''
@@ -83,8 +84,10 @@ export default function DraftImpactTesting({ workspaceId, catalog, risks, isCont
   }
 
   function chooseRisk(riskKey: string) {
-    if (riskKey === selectedRiskKey) return
     const risk = workflowRisks.find((candidate) => candidate.key === riskKey)
+    if (!risk) return
+    setGraphSelectionRequest((current) => ({ nodeId: `responsibility:${risk.requirementId}`, requestId: (current?.requestId ?? 0) + 1 }))
+    if (riskKey === selectedRiskKey) return
     setSelectedRiskKey(riskKey)
     setSelectedMemberId(risk?.members[0]?.id ?? '')
     resetResults()
@@ -154,6 +157,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, risks, isCont
             isPending={mutation.isPending || mitigationMutation.isPending}
             onRunScenario={runScenario}
             onTryReplacement={tryReplacement}
+            selectionRequest={graphSelectionRequest}
           />
         </Suspense>
         {originalResult && showOutcomeExplanation ? <OutcomeExplanation key={`${mutation.submittedAt}`} risk={selectedRisk} member={selectedMember} onDismiss={() => setShowOutcomeExplanation(false)} /> : null}
@@ -172,6 +176,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, risks, isCont
         {mitigationMutation.data ? <ReplacementAssessment original={mitigationMutation.data.original} mitigation={mitigationMutation.data.mitigation} /> : null}
         {originalResult ? (
           <DraftMitigationPanel
+            catalog={catalog}
             result={originalResult}
             mitigation={mitigationMutation.data?.mitigation}
             isPending={mitigationMutation.isPending}
@@ -216,7 +221,8 @@ function ReplacementAssessment({ original, mitigation }: { original: DraftImpact
   )
 }
 
-function DraftMitigationPanel({ result, mitigation, isPending, error, onTest }: {
+function DraftMitigationPanel({ catalog, result, mitigation, isPending, error, onTest }: {
+  catalog: DraftCatalog
   result: DraftImpactResult
   mitigation?: DraftImpactResult
   isPending: boolean
@@ -233,25 +239,86 @@ function DraftMitigationPanel({ result, mitigation, isPending, error, onTest }: 
     )
   }
 
+  const [primaryRecommendation, ...alternativeRecommendations] = result.recommendations.toSorted((left, right) => left.rank - right.rank)
+  const primaryTested = mitigation?.changeSet.replacementEmployee?.id === primaryRecommendation.candidate.id
+  const primaryAlignment = describeRecommendationAlignment(catalog, result, primaryRecommendation)
+
   return (
     <section className="draft-mitigation-panel" aria-labelledby="draft-mitigation-title">
-      <div className="draft-mitigation-heading"><div><p className="section-kicker">Step 3</p><h3 id="draft-mitigation-title">Test a safe replacement</h3><p>These options come from the same deterministic eligibility and workflow rules used by the impact test.</p></div><span>{result.recommendations.length} safe option{result.recommendations.length === 1 ? '' : 's'}</span></div>
+      <div className="draft-mitigation-heading"><div><p className="section-kicker">Step 3</p><h3 id="draft-mitigation-title">Recommended replacement</h3><p>Start with the best available member. Other valid choices stay collapsed until you need them.</p></div><span>Best fit</span></div>
       <div className="draft-recommendation-list">
-        {result.recommendations.map((recommendation) => {
-          const tested = mitigation?.changeSet.replacementEmployee?.id === recommendation.candidate.id
-          return (
-            <article className={`draft-recommendation-card ${tested ? 'tested' : ''}`} key={recommendation.id}>
-              <span className="draft-recommendation-rank">{String(recommendation.rank).padStart(2, '0')}</span>
-              <div><strong>Assign {recommendation.role.name} to {recommendation.candidate.name}</strong><p>This restores {formatEntityNames(recommendation.restoredWorkflowSteps)} with {recommendation.gainedPermissions.length} additional effective permission{recommendation.gainedPermissions.length === 1 ? '' : 's'}.</p><div className="draft-recommendation-evidence">{recommendation.evidence.map((evidence) => <span key={evidence}>{evidenceLabel(evidence)}</span>)}</div></div>
-              <button type="button" disabled={isPending} onClick={() => onTest(recommendation.candidate.id)}>{isPending ? 'Testing mitigation…' : tested ? 'Test mitigation again' : 'Test this mitigation'}</button>
-            </article>
-          )
-        })}
+        <article className={`draft-recommendation-card primary ${primaryTested ? 'tested' : ''}`}>
+          <span className="draft-recommendation-rank">01</span>
+          <div><span className={`recommendation-alignment ${primaryAlignment.tone}`}>{primaryAlignment.label}</span><strong>Assign {primaryRecommendation.role.name} to {primaryRecommendation.candidate.name}</strong><p>{primaryAlignment.reason}</p><p>This restores {formatEntityNames(primaryRecommendation.restoredWorkflowSteps)} with {primaryRecommendation.gainedPermissions.length} additional effective permission{primaryRecommendation.gainedPermissions.length === 1 ? '' : 's'}.</p><div className="draft-recommendation-evidence">{primaryRecommendation.evidence.map((evidence) => <span key={evidence}>{evidenceLabel(evidence)}</span>)}</div></div>
+          <button type="button" disabled={isPending} onClick={() => onTest(primaryRecommendation.candidate.id)}>{isPending ? 'Testing mitigation…' : primaryTested ? 'Test mitigation again' : `Preview ${primaryRecommendation.candidate.name}`}</button>
+        </article>
       </div>
+      {alternativeRecommendations.length > 0 ? (
+        <details className="draft-alternative-recommendations" aria-label="Alternative replacements">
+          <summary><span>{alternativeRecommendations.length} alternative{alternativeRecommendations.length === 1 ? '' : 's'}</span><small>Valid options with trade-offs</small></summary>
+          <div className="draft-alternative-list">
+            {alternativeRecommendations.map((recommendation) => (
+              <article className="draft-alternative-card" key={recommendation.id}>
+                <strong>{recommendation.candidate.name}</strong><span>{recommendation.role.name}</span><p>{describeAlternativeTradeoff(catalog, result, recommendation)}</p>
+              </article>
+            ))}
+          </div>
+        </details>
+      ) : null}
       {error ? <p className="form-error" role="alert">{error.message}</p> : null}
       {result.excludedCandidateReasons.length > 0 ? <CandidateExclusions result={result} /> : null}
     </section>
   )
+}
+
+function describeAlternativeTradeoff(
+  catalog: DraftCatalog,
+  result: DraftImpactResult,
+  recommendation: DraftImpactResult['recommendations'][number],
+) {
+  const candidate = catalog.members.find((member) => member.id === recommendation.candidate.id)
+  const currentRoleIds = new Set(candidate?.roleIds ?? [])
+  const existingResponsibilities = catalog.workflows.reduce(
+    (count, workflow) => count + workflow.requirements.filter((requirement) => requirement.roleIds.some((roleId) => currentRoleIds.has(roleId))).length,
+    0,
+  )
+  const alignment = describeRecommendationAlignment(catalog, result, recommendation)
+  const existingCoverage = existingResponsibilities > 0
+    ? `${recommendation.candidate.name} already supports ${existingResponsibilities} mapped responsibilit${existingResponsibilities === 1 ? 'y' : 'ies'}, so this adds another dependency.`
+    : `This adds another dependency and ranks behind the best-fit member.`
+  return `${alignment.reason} ${existingCoverage}`
+}
+
+function describeRecommendationAlignment(
+  catalog: DraftCatalog,
+  result: DraftImpactResult,
+  recommendation: DraftImpactResult['recommendations'][number],
+) {
+  const source = catalog.members.find((member) => member.id === result.changeSet.employee.id)
+  const candidate = catalog.members.find((member) => member.id === recommendation.candidate.id)
+  const sourceTeam = catalog.teams.find((team) => team.id === source?.teamId)
+  const candidateTeam = catalog.teams.find((team) => team.id === candidate?.teamId)
+  const addedAccess = `${recommendation.gainedPermissions.length} new effective permission${recommendation.gainedPermissions.length === 1 ? '' : 's'}`
+
+  if (sourceTeam && candidateTeam && sourceTeam.id === candidateTeam.id) {
+    return {
+      label: recommendation.rank === 1 ? 'Best aligned · same team' : 'Same-team alternative',
+      tone: 'aligned',
+      reason: `Ranked #${recommendation.rank} because ${recommendation.candidate.name} is in the same team as ${result.changeSet.employee.name}. The proposed assignment requires ${addedAccess}.`,
+    }
+  }
+  if (sourceTeam && candidateTeam && sourceTeam.department === candidateTeam.department) {
+    return {
+      label: 'Cross-team · same department',
+      tone: 'review',
+      reason: `Ranked #${recommendation.rank} as a technically viable cross-team option within ${sourceTeam.department}. Review the transfer of responsibility before granting ${addedAccess}.`,
+    }
+  }
+  return {
+    label: 'Cross-department alternative',
+    tone: 'review',
+    reason: `Ranked #${recommendation.rank} because the configured workflow rules are restored, but this crosses organizational boundaries and requires ${addedAccess}.`,
+  }
 }
 
 function CandidateExclusions({ result }: { result: DraftImpactResult }) {

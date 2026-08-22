@@ -168,7 +168,7 @@ public class DraftCatalogService {
 			throw new DraftCatalogNotFoundException("Workflow", workflowId);
 		}
 		if (!repository.quickWorkflowExists(workspaceId, workflowId)) {
-			throw new DraftCatalogConflictException("The example workflow is read-only for now; clone its pattern into a custom workflow to edit requirements");
+			throw new DraftCatalogConflictException("The example workflow is read-only; create a custom workflow to edit requirements");
 		}
 		requireRole(workspaceId, request.roleId());
 		requireCoverage(request.minimumActors(), request.resilienceTarget());

@@ -59,7 +59,6 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 	public static final String SCHEMA_VERSION = REQUEST_SCHEMA_VERSION;
 	public static final String ENGINE_VERSION = "1.2.0";
 
-	private static final int MAX_RECOMMENDATIONS = 2;
 	private static final Comparator<UUID> UUID_ORDER = Comparator.comparing(UUID::toString);
 	private static final Comparator<EntityRef> ENTITY_ORDER = Comparator
 			.comparing(EntityRef::name)
@@ -848,7 +847,6 @@ public final class DeterministicImpactEngine implements ImpactEngine {
 		var role = snapshot.roles().get(roleId);
 		var orderedCandidates = safeCandidates.stream()
 				.sorted(RECOMMENDATION_ORDER)
-				.limit(MAX_RECOMMENDATIONS)
 				.toList();
 		var recommendations = new ArrayList<Recommendation>();
 		for (var index = 0; index < orderedCandidates.size(); index++) {

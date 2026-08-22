@@ -25,9 +25,14 @@ const DraftImpactTesting = lazy(() => import('./DraftImpactTesting'))
 
 type EditorStage = 'teams' | 'members' | 'roles' | 'workflows'
 
-export default function DraftEditor({ workspaceId, isTemplateClone }: { workspaceId: string; isTemplateClone: boolean }) {
+export type DraftEditorView = 'map' | 'impact' | 'inventory'
+
+export default function DraftEditor({ workspaceId, view, onViewChange }: {
+  workspaceId: string
+  view: DraftEditorView
+  onViewChange: (view: DraftEditorView) => void
+}) {
   const [stage, setStage] = useState<EditorStage>('teams')
-  const [view, setView] = useState<'map' | 'impact' | 'inventory'>('map')
   const editorRef = useRef<HTMLElement>(null)
   const catalogQuery = useQuery({
     queryKey: ['draft-catalog', workspaceId],
@@ -67,42 +72,46 @@ export default function DraftEditor({ workspaceId, isTemplateClone }: { workspac
 
   function openInventory(nextStage?: EditorStage) {
     if (nextStage) setStage(nextStage)
-    setView('inventory')
+    onViewChange('inventory')
     window.requestAnimationFrame(() => editorRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }))
   }
 
   return (
-    <section ref={editorRef} className="draft-editor" aria-labelledby="editor-title">
-      <div className="editor-heading">
-        <div>
-          <p className="section-kicker">{view === 'impact' ? 'Business continuity lab' : 'Visual organization builder'}</p>
-          <h2 id="editor-title">{view === 'impact' ? 'Test a change before it happens' : 'Map how your organization works'}</h2>
-        </div>
+    <section ref={editorRef} className={`draft-editor ${view === 'impact' ? 'impact-editor' : ''}`} aria-labelledby={view === 'impact' ? undefined : 'editor-title'} aria-label={view === 'impact' ? 'Test impact workspace' : undefined}>
+      <div className={`editor-heading ${view === 'impact' ? 'impact-editor-heading' : ''}`}>
+        {view !== 'impact' ? (
+          <div>
+            <p className="section-kicker">Visual organization builder</p>
+            <h2 id="editor-title">Map how your organization works</h2>
+          </div>
+        ) : null}
         <div className="editor-view-switch" aria-label="Organization builder view">
-          <button type="button" className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => setView('map')}>Organization map</button>
-          <button type="button" className={view === 'impact' ? 'active' : ''} aria-pressed={view === 'impact'} onClick={() => setView('impact')}>Test impact</button>
-          <button type="button" className={view === 'inventory' ? 'active' : ''} aria-pressed={view === 'inventory'} onClick={() => setView('inventory')}>Detailed inventory</button>
+          <button type="button" className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => onViewChange('map')}>Organization map</button>
+          <button type="button" className={view === 'impact' ? 'active' : ''} aria-pressed={view === 'impact'} onClick={() => onViewChange('impact')}>Test impact</button>
+          <button type="button" className={view === 'inventory' ? 'active' : ''} aria-pressed={view === 'inventory'} onClick={() => onViewChange('inventory')}>Detailed inventory</button>
         </div>
       </div>
 
-      <div className="draft-summary editor-summary" aria-label="Draft catalog summary">
-        {liveCounts.map((count) => (
-          <article key={count.label}><strong>{count.value}</strong><span>{count.label}</span></article>
-        ))}
-      </div>
+      {view !== 'impact' ? (
+        <div className="draft-summary editor-summary" aria-label="Draft catalog summary">
+          {liveCounts.map((count) => (
+            <article key={count.label}><strong>{count.value}</strong><span>{count.label}</span></article>
+          ))}
+        </div>
+      ) : null}
 
       {view === 'map' && !continuityQuery.isFetching && !continuityQuery.isError && firstBlockedRisk && firstBlockedMember ? (
         <section className="risk-callout" aria-label="Continuity risks found">
           <span aria-hidden="true">!</span>
           <div><strong>{singlePointRisks.length} critical coverage gap{singlePointRisks.length === 1 ? '' : 's'} found</strong><p>According to the impact engine, removing {firstBlockedRisk.roleName} from {firstBlockedMember.name} would block {firstBlockedRisk.workflowName}.</p></div>
-          <button type="button" onClick={() => setView('impact')}>Test this risk</button>
+          <button type="button" onClick={() => onViewChange('impact')}>Test this risk</button>
         </section>
       ) : null}
 
       {view === 'map' ? (
-        <Suspense fallback={<p className="editor-state">Opening the organization map…</p>}><OrganizationCanvas workspaceId={workspaceId} catalog={catalog} initialFocus={isTemplateClone} onOpenInventory={() => openInventory()} onOpenWorkflows={() => openInventory('workflows')} onTestImpact={() => setView('impact')} /></Suspense>
+        <Suspense fallback={<p className="editor-state">Opening the organization map…</p>}><OrganizationCanvas workspaceId={workspaceId} catalog={catalog} initialFocus={false} onOpenInventory={() => openInventory()} onOpenWorkflows={() => openInventory('workflows')} onTestImpact={() => onViewChange('impact')} /></Suspense>
       ) : view === 'impact' ? (
-        <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} risks={continuityRisks} isContinuityLoading={continuityQuery.isFetching} continuityError={continuityQuery.error} onRetryContinuity={() => void continuityQuery.refetch()} onBackToMap={() => setView('map')} /></Suspense>
+        <Suspense fallback={<p className="editor-state">Preparing impact testing…</p>}><DraftImpactTesting workspaceId={workspaceId} catalog={catalog} risks={continuityRisks} isContinuityLoading={continuityQuery.isFetching} continuityError={continuityQuery.error} onRetryContinuity={() => void continuityQuery.refetch()} onBackToMap={() => onViewChange('map')} /></Suspense>
       ) : (
         <>
           <nav className="editor-stages" aria-label="Catalog builder stages">
