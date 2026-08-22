@@ -51,6 +51,9 @@ class DeterministicImpactEngineTest {
 	private static final UUID OLIVIA_ID = id("20000000", 3);
 	private static final UUID DYLAN_ID = id("20000000", 4);
 	private static final UUID INEZ_ID = id("20000000", 5);
+	private static final UUID ALICE_ID = id("20000000", 6);
+	private static final UUID CARLOS_ID = id("20000000", 7);
+	private static final UUID ELENA_ID = id("20000000", 8);
 	private static final UUID FINANCE_ANALYST_ID = id("30000000", 1);
 	private static final UUID FINANCE_APPROVER_ID = id("30000000", 2);
 	private static final UUID CLOSE_BACKUP_ID = id("30000000", 3);
@@ -111,6 +114,18 @@ class DeterministicImpactEngineTest {
 				.containsExactly(CandidateExclusionReasonCode.CURRENT_ROLE_HOLDER);
 		assertThat(reasonCodes(exclusion(result.excludedCandidateReasons(), PRIYA_ID)))
 				.containsExactly(CandidateExclusionReasonCode.SOURCE_EMPLOYEE);
+	}
+
+	@Test
+	void returnsEverySafeReplacementCandidateInRankOrder() {
+		var result = engine.analyze(snapshotWithAdditionalSafeCandidates(), revokePriyaApprover());
+
+		assertThat(result.recommendations())
+				.extracting(recommendation -> recommendation.candidate().name())
+				.containsExactly("Bob Chen", "Alice Morgan", "Carlos Ruiz", "Elena Rossi");
+		assertThat(result.recommendations())
+				.extracting(recommendation -> recommendation.rank())
+				.containsExactly(1, 2, 3, 4);
 	}
 
 	@Test
@@ -409,6 +424,28 @@ class DeterministicImpactEngineTest {
 				orderedMap(reverseOrder, List.of(
 						Map.entry(CREATE_PAYMENT_STEP_ID, linkedSet(DIFFERENT_ACTORS_ID)),
 						Map.entry(APPROVE_PAYMENT_STEP_ID, linkedSet(DIFFERENT_ACTORS_ID)))));
+	}
+
+	private static OrganizationSnapshot snapshotWithAdditionalSafeCandidates() {
+		var baseline = snapshot(false, false);
+		var employees = new LinkedHashMap<>(baseline.employees());
+		employees.put(ALICE_ID, employee(ALICE_ID, "Alice Morgan", EmployeeStatus.ACTIVE, WorkShift.EVENING));
+		employees.put(CARLOS_ID, employee(CARLOS_ID, "Carlos Ruiz", EmployeeStatus.ACTIVE, WorkShift.EVENING));
+		employees.put(ELENA_ID, employee(ELENA_ID, "Elena Rossi", EmployeeStatus.ACTIVE, WorkShift.EVENING));
+		return new OrganizationSnapshot(
+				baseline.organization(),
+				baseline.teams(),
+				employees,
+				baseline.roles(),
+				baseline.applications(),
+				baseline.resources(),
+				baseline.permissions(),
+				baseline.capabilities(),
+				baseline.workflows(),
+				baseline.roleIdsByEmployeeId(),
+				baseline.permissionIdsByRoleId(),
+				baseline.permissionIdsByCapabilityId(),
+				baseline.constraintIdsByWorkflowStepId());
 	}
 
 	private static EmployeeNode employee(

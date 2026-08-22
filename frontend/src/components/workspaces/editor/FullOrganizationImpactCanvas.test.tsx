@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { DraftCatalog } from '../../../api/draftCatalog'
 import type { DraftContinuityRisk, DraftImpactResult } from '../../../api/draftImpact'
 import { OrganizationImpactCanvas } from './OrganizationCanvas'
+import '../../../App.css'
 
 describe('FullOrganizationImpactCanvas', () => {
   it('keeps a shared role available when removing one holder leaves other eligible holders', async () => {
@@ -25,8 +26,48 @@ describe('FullOrganizationImpactCanvas', () => {
     expect(await screen.findByLabelText(/member Maya Singh.*Assignment removed/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/role Invoice Processor.*2 holders remain/i)).toBeInTheDocument()
     expect(screen.queryByLabelText(/role Invoice Processor.*Removed/i)).not.toBeInTheDocument()
-    expect(screen.getByLabelText(/responsibility Validate supplier invoice.*Still operational/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/workflow Daily Vendor Payment Run.*Still operational/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/responsibility Validate supplier invoice.*Still operational/i).firstElementChild).toHaveClass('simulation-operational')
+    expect(screen.getByLabelText(/workflow Daily Vendor Payment Run.*Still operational/i).firstElementChild).toHaveClass('simulation-operational')
+  })
+
+  it('keeps every member of a participating team visible in workflow focus', async () => {
+    render(
+      <OrganizationImpactCanvas
+        workspaceId="workspace-1"
+        catalog={candidateCatalog}
+        workflowId="workflow-1"
+        risks={safeSharedRoleRisks}
+        selectedRiskKey="workflow-1:requirement-1:role-1"
+        selectedMemberId="member-maya"
+        isPending={false}
+        onRunScenario={vi.fn()}
+        onTryReplacement={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByLabelText(/member Arjun Mehta/i)).toBeInTheDocument()
+  })
+
+  it('renders graph controls with dark backgrounds', () => {
+    const { container } = render(
+      <OrganizationImpactCanvas
+        workspaceId="workspace-1"
+        catalog={candidateCatalog}
+        workflowId="workflow-1"
+        risks={safeSharedRoleRisks}
+        selectedRiskKey="workflow-1:requirement-1:role-1"
+        selectedMemberId="member-maya"
+        originalResult={candidateResult}
+        displayedResult={candidateResult}
+        isPending={false}
+        onRunScenario={vi.fn()}
+        onTryReplacement={vi.fn()}
+      />,
+    )
+
+    const controlButton = container.querySelector<HTMLElement>('.full-impact-map-canvas .react-flow__controls-button')
+    expect(controlButton).not.toBeNull()
+    expect(getComputedStyle(controlButton!).backgroundColor).toBe('rgb(23, 26, 36)')
   })
 })
 
@@ -84,4 +125,23 @@ const safeSharedRoleResult = {
   recommendations: [],
   excludedCandidateReasons: [],
   diagnostics: { resultHash: 'safe-shared-role' },
+} as unknown as DraftImpactResult
+
+const candidateCatalog: DraftCatalog = {
+  ...safeSharedRoleCatalog,
+  teams: [{ ...safeSharedRoleCatalog.teams[0], memberCount: 4 }],
+  members: [
+    ...safeSharedRoleCatalog.members,
+    { id: 'member-arjun', teamId: 'team-ap', employeeNumber: null, name: 'Arjun Mehta', email: null, status: 'ACTIVE', region: 'NORTH_AMERICA', shift: 'DAY', roleIds: [] },
+  ],
+}
+
+const candidateResult = {
+  ...safeSharedRoleResult,
+  recommendations: [{
+    id: 'recommendation-1',
+    rank: 1,
+    candidate: { id: 'member-arjun', name: 'Arjun Mehta' },
+  }],
+  diagnostics: { resultHash: 'candidate-result' },
 } as unknown as DraftImpactResult

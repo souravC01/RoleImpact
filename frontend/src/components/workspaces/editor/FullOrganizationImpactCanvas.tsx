@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import {
   Background,
   Controls,
@@ -14,7 +14,7 @@ import type { DraftContinuityRisk, DraftImpactResult } from '../../../api/draftI
 import type { CanvasNode, OrganizationSimulationState } from './OrganizationCanvas'
 
 type ImpactContextMenu = { x: number; y: number; memberId: string }
-type ImpactEdgeState = 'removed' | 'blocked' | 'degraded' | 'restored' | 'candidate'
+type ImpactEdgeState = 'removed' | 'blocked' | 'degraded' | 'operational' | 'restored' | 'candidate'
 
 export type FullOrganizationImpactCanvasProps = {
   workspaceId: string
@@ -28,6 +28,7 @@ export type FullOrganizationImpactCanvasProps = {
   isPending: boolean
   onRunScenario: (riskKey: string, memberId: string) => void
   onTryReplacement: (memberId: string) => void
+  selectionRequest?: { nodeId: string; requestId: number } | null
 }
 
 export default function FullOrganizationImpactCanvas({
@@ -41,6 +42,7 @@ export default function FullOrganizationImpactCanvas({
   isPending,
   onRunScenario,
   onTryReplacement,
+  selectionRequest,
   baseNodes,
   baseEdges,
   baseFocusIds,
@@ -54,6 +56,7 @@ export default function FullOrganizationImpactCanvas({
   getRelatedPathIds: (selectedNodeId: string) => Set<string>
 }) {
   const { fitView } = useReactFlow<CanvasNode, Edge>()
+  const mapRef = useRef<HTMLElement>(null)
   const [scope, setScope] = useState<'workflow' | 'full'>('workflow')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<ImpactContextMenu | null>(null)
@@ -102,6 +105,19 @@ export default function FullOrganizationImpactCanvas({
     setScope('workflow')
   }, [workflowId])
 
+  useEffect(() => {
+    if (!selectionRequest) return
+    setContextMenu(null)
+    setSelectedNodeId(selectionRequest.nodeId)
+    const pathIds = getRelatedPathIds(selectionRequest.nodeId)
+    const pathNodes = model.nodes.filter((node) => pathIds.has(node.id))
+    const frame = window.requestAnimationFrame(() => {
+      mapRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+      if (pathNodes.length > 0) void fitView({ nodes: pathNodes, duration: 350, maxZoom: 1.05, padding: 0.45 })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [fitView, getRelatedPathIds, model.nodes, selectionRequest])
+
   function fitSelection() {
     if (!selectedPathIds) return
     const nodes = visibleNodes.filter((node) => selectedPathIds.has(node.id))
@@ -109,7 +125,7 @@ export default function FullOrganizationImpactCanvas({
   }
 
   return (
-    <section className="full-impact-map" aria-labelledby="full-impact-map-title">
+    <section ref={mapRef} className="full-impact-map" aria-labelledby="full-impact-map-title">
       <div className="canvas-toolbar impact-map-toolbar">
         <div><h3 id="full-impact-map-title">Test impact map</h3><span>{selectedNode ? `${impactTypeLabels[selectedNode.data.entityType]} selected · connected path highlighted` : `${selectedWorkflow?.name ?? 'Selected workflow'} · select any object to trace its path`}</span></div>
         <div className="canvas-toolbar-actions">
@@ -117,7 +133,7 @@ export default function FullOrganizationImpactCanvas({
           {selectedNode ? <button type="button" className="secondary-button" onClick={fitSelection}>Fit selection</button> : null}
           {selectedNode ? <button type="button" className="secondary-button" onClick={() => setSelectedNodeId(null)}>Clear selection</button> : null}
           <button type="button" className="secondary-button" onClick={() => void fitView({ duration: 350, padding: 0.25 })}>Fit graph</button>
-          <details className="impact-map-legend"><summary>Legend</summary><div className="scenario-legend" aria-label="Organization impact legend"><span><i className="selected" />Selected</span><span><i className="candidate" />Candidate</span><span><i className="blocked" />Blocked</span><span><i className="degraded" />Degraded</span><span><i className="safe" />Restored</span></div></details>
+          <details className="impact-map-legend"><summary>Legend</summary><div className="scenario-legend" aria-label="Organization impact legend"><span><i className="selected" />Selected</span><span><i className="candidate" />Candidate</span><span><i className="blocked" />Blocked</span><span><i className="degraded" />Degraded</span><span><i className="safe" />Healthy / restored</span></div></details>
         </div>
       </div>
       <div className="full-impact-map-canvas" aria-label="Complete organization impact map">
@@ -300,7 +316,8 @@ function buildImpactModel(
       : displayedResult?.workflowImpacts.some((workflow) => workflow.scenarioStatus === 'DEGRADED' && workflow.scenarioStatus !== workflow.baselineStatus) ? 'degraded'
         : 'restored'
     : undefined
-  const recommendationRank = new Map(originalResult?.recommendations.map((candidate) => [candidate.candidate.id, candidate.rank]) ?? [])
+  const primaryRecommendation = originalResult?.recommendations.toSorted((left, right) => left.rank - right.rank)[0]
+  const recommendationRank = new Map(primaryRecommendation ? [[primaryRecommendation.candidate.id, 1]] : [])
   const exclusions = new Map(originalResult?.excludedCandidateReasons.map((candidate) => [candidate.candidate.id, candidate]) ?? [])
   const stepStates = new Map<string, OrganizationSimulationState>()
   const workflowStates = new Map<string, OrganizationSimulationState>()
@@ -353,7 +370,7 @@ function buildImpactModel(
             .flatMap((workflow) => workflow.requirements)
             .filter((requirement) => requirement.roleIds.includes(entityId))
             .map((requirement) => stepStates.get(requirement.id))
-          simulationState = supportingStates.includes('blocked') ? 'blocked' : supportingStates.includes('degraded') ? 'degraded' : 'source'
+          simulationState = supportingStates.includes('blocked') ? 'blocked' : supportingStates.includes('degraded') ? 'degraded' : 'operational'
           badge = `${remainingHolderCount} holder${remainingHolderCount === 1 ? '' : 's'} remain`
           const sourceName = catalog.members.find((member) => member.id === sourceMemberId)?.name ?? 'the selected member'
           detail = `Only ${sourceName}'s assignment is removed. This shared role remains available through ${remainingHolderCount} other holder${remainingHolderCount === 1 ? '' : 's'}.`
@@ -415,12 +432,13 @@ function buildImpactEdges(
 }
 
 function styleImpactEdge(edge: Edge, state: ImpactEdgeState | undefined, relevant: boolean): Edge {
-  const color = state === 'removed' || state === 'blocked' ? '#fb7185' : state === 'degraded' ? '#fbbf24' : state === 'candidate' ? '#38bdf8' : state === 'restored' ? '#4ade80' : '#7f6ce5'
+  const color = state === 'removed' || state === 'blocked' ? '#fb7185' : state === 'degraded' ? '#fbbf24' : state === 'candidate' ? '#38bdf8' : state === 'operational' || state === 'restored' ? '#4ade80' : '#7f6ce5'
   return {
     ...edge,
     animated: state === 'restored' || state === 'candidate',
     style: { ...edge.style, stroke: color, strokeWidth: state ? 2.5 : 1.6, opacity: relevant ? 1 : 0.12, strokeDasharray: state === 'candidate' || state === 'removed' ? '6 5' : undefined },
     labelStyle: { ...edge.labelStyle, fill: state ? color : '#aeb5c7', opacity: relevant ? 1 : 0.08 },
+    labelBgStyle: { ...edge.labelBgStyle, fill: '#12151e', fillOpacity: 0.95 },
     markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
   }
 }
@@ -474,11 +492,11 @@ function resultState(scenario: DraftImpactResult['workflowImpacts'][number]['sce
   if (mitigation && scenario === baseline) return 'restored'
   if (scenario === 'BLOCKED') return 'blocked'
   if (scenario === 'DEGRADED') return 'degraded'
-  return mitigation ? 'restored' : 'source'
+  return mitigation ? 'restored' : 'operational'
 }
 
 function toEdgeState(state: OrganizationSimulationState | undefined): ImpactEdgeState | undefined {
-  if (state === 'blocked' || state === 'degraded' || state === 'restored') return state
+  if (state === 'blocked' || state === 'degraded' || state === 'operational' || state === 'restored') return state
   return undefined
 }
 
@@ -486,7 +504,7 @@ function stateBadge(state: OrganizationSimulationState) {
   if (state === 'blocked') return 'Blocked'
   if (state === 'degraded') return 'Degraded'
   if (state === 'restored') return 'Restored'
-  if (state === 'source') return 'Still operational'
+  if (state === 'operational') return 'Still operational'
   return undefined
 }
 

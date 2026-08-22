@@ -15,6 +15,7 @@ export default function DraftWorkspace({ workspace, view, newlyCreated = false, 
   const [showOnboarding, setShowOnboarding] = useState(newlyCreated)
   const [copyMessage, setCopyMessage] = useState<string | null>(null)
   const isEmpty = workspace.counts.members === 0
+  const isImpactView = view === 'impact'
 
   async function copyValue(value: string, message: string) {
     try {
@@ -41,9 +42,9 @@ export default function DraftWorkspace({ workspace, view, newlyCreated = false, 
           <button type="button" onClick={() => void copyValue(organizationLink, 'Organization link copied.')}>Copy organization link</button>
         </div>
       </header>
-      <main className="draft-main">
+      <main className={`draft-main ${isImpactView ? 'impact-main' : ''}`}>
         {copyMessage ? <p className="copy-feedback" role="status">{copyMessage}</p> : null}
-        {showOnboarding ? (
+        {showOnboarding && !isImpactView ? (
           <section className="organization-onboarding" aria-labelledby="save-organization-title">
             <div>
               <p className="section-kicker">Keep access to your work</p>
@@ -59,13 +60,17 @@ export default function DraftWorkspace({ workspace, view, newlyCreated = false, 
             </div>
           </section>
         ) : null}
-        <p className="eyebrow">Organization builder</p>
-        <h1>{workspace.name}</h1>
-        <p className="draft-lede">
-          {isEmpty
-            ? 'Your organization is ready. Add its first team and build outward from there.'
-            : 'Edit the model, test access changes, and return later using the organization ID or link.'}
-        </p>
+        {!isImpactView ? (
+          <>
+            <p className="eyebrow">Organization builder</p>
+            <h1>{workspace.name}</h1>
+            <p className="draft-lede">
+              {isEmpty
+                ? 'Your organization is ready. Add its first team and build outward from there.'
+                : 'Edit the model, test access changes, and return later using the organization ID or link.'}
+            </p>
+          </>
+        ) : null}
         <DraftEditor workspaceId={workspace.id} view={view} onViewChange={onViewChange} />
         <button className="text-button" type="button" onClick={() => navigate('/')}>← Back to workspace choices</button>
       </main>

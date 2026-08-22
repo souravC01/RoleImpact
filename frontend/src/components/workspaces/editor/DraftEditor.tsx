@@ -77,12 +77,14 @@ export default function DraftEditor({ workspaceId, view, onViewChange }: {
   }
 
   return (
-    <section ref={editorRef} className="draft-editor" aria-labelledby="editor-title">
-      <div className="editor-heading">
-        <div>
-          <p className="section-kicker">{view === 'impact' ? 'Business continuity lab' : 'Visual organization builder'}</p>
-          <h2 id="editor-title">{view === 'impact' ? 'Test a change before it happens' : 'Map how your organization works'}</h2>
-        </div>
+    <section ref={editorRef} className={`draft-editor ${view === 'impact' ? 'impact-editor' : ''}`} aria-labelledby={view === 'impact' ? undefined : 'editor-title'} aria-label={view === 'impact' ? 'Test impact workspace' : undefined}>
+      <div className={`editor-heading ${view === 'impact' ? 'impact-editor-heading' : ''}`}>
+        {view !== 'impact' ? (
+          <div>
+            <p className="section-kicker">Visual organization builder</p>
+            <h2 id="editor-title">Map how your organization works</h2>
+          </div>
+        ) : null}
         <div className="editor-view-switch" aria-label="Organization builder view">
           <button type="button" className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => onViewChange('map')}>Organization map</button>
           <button type="button" className={view === 'impact' ? 'active' : ''} aria-pressed={view === 'impact'} onClick={() => onViewChange('impact')}>Test impact</button>
@@ -90,11 +92,13 @@ export default function DraftEditor({ workspaceId, view, onViewChange }: {
         </div>
       </div>
 
-      <div className="draft-summary editor-summary" aria-label="Draft catalog summary">
-        {liveCounts.map((count) => (
-          <article key={count.label}><strong>{count.value}</strong><span>{count.label}</span></article>
-        ))}
-      </div>
+      {view !== 'impact' ? (
+        <div className="draft-summary editor-summary" aria-label="Draft catalog summary">
+          {liveCounts.map((count) => (
+            <article key={count.label}><strong>{count.value}</strong><span>{count.label}</span></article>
+          ))}
+        </div>
+      ) : null}
 
       {view === 'map' && !continuityQuery.isFetching && !continuityQuery.isError && firstBlockedRisk && firstBlockedMember ? (
         <section className="risk-callout" aria-label="Continuity risks found">
