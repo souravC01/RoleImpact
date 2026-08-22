@@ -18,6 +18,8 @@ and mitigation vertical slice:
 - Ranked, evidence-backed replacement recommendations
 - Persisted parent/child mitigation simulations with idempotent replay
 - Stateless impact and mitigation previews for user-built draft organizations
+- Stable public organization IDs and refresh-safe links for reopening editable
+  organization maps, inventories, and impact screens
 - Draft recommendations that verify eligibility and workflow recovery after the
   proposed role assignment, even when the candidate does not already have the
   access that the new role would grant
@@ -75,6 +77,25 @@ amber impact paths, review Bob Chen's recommendation, and test the mitigation to
 see the restored green relationship graph alongside the Low residual access
 impact.
 
+Editable organizations can be reopened from the homepage using their public ID
+with or without the displayed hyphen. Anyone with an organization ID or link can
+edit that organization in this portfolio MVP, so do not enter confidential or
+personal data.
+
+## Frontend routes
+
+- `/example` opens the read-only Harborline example.
+- `/organizations/{publicCode}/map` opens an editable organization map.
+- `/organizations/{publicCode}/inventory` opens its detailed inventory.
+- `/organizations/{publicCode}/impact` opens a fresh impact-testing screen.
+
+Refreshing any of these routes keeps the same organization and screen. Impact
+and mitigation results are intentionally temporary, so refreshing the impact
+route clears the previous result while preserving the selected screen. Vite's
+development and preview servers provide the required history fallback locally.
+Production hosting must rewrite non-asset, non-API routes to
+`frontend/index.html` so pasted organization links load correctly.
+
 ## API endpoints
 
 - `GET /api/v1/dashboard` loads the default Harborline Commerce dashboard.
@@ -84,6 +105,12 @@ impact.
 - `GET /api/v1/simulations/{simulationId}` retrieves an immutable saved result.
 - `POST /api/v1/simulations/{simulationId}/branches` tests and saves a
   recommendation as a child mitigation simulation.
+- `POST /api/v1/workspaces` creates a blank editable organization and returns
+  its stable public code.
+- `GET /api/v1/workspaces/by-code/{publicCode}` resolves an editable
+  organization. The Harborline example is intentionally excluded.
+- `GET /api/v1/workspaces/{workspaceId}/catalog` loads the editable catalog
+  after the public code has been resolved.
 - `POST /api/v1/workspaces/{workspaceId}/impact-previews` tests a role removal
   against the current draft without changing it.
 - `POST /api/v1/workspaces/{workspaceId}/impact-previews/mitigations` verifies a
