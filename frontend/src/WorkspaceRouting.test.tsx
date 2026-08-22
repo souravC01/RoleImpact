@@ -5,6 +5,9 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
+const workspaceCode = 'NMS-0123456789ABCDEF0123456789ABCDEF'
+const compactWorkspaceCode = workspaceCode.replace('-', '')
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -26,16 +29,16 @@ describe('organization routing', () => {
     mockWorkspaceRequests()
     renderApp(['/'])
 
-    await user.type(await screen.findByLabelText('Organization ID'), 'nms7k4p9d')
+    await user.type(await screen.findByLabelText('Organization ID'), compactWorkspaceCode.toLowerCase())
     await user.click(screen.getByRole('button', { name: 'Open organization' }))
 
     expect(await screen.findByRole('heading', { name: 'Northstar Medical Supplies' })).toBeInTheDocument()
-    expect(screen.getByText('NMS-7K4P9D')).toBeInTheDocument()
+    expect(screen.getByText(workspaceCode)).toBeInTheDocument()
   })
 
   it('loads the inventory route directly', async () => {
     mockWorkspaceRequests()
-    renderApp(['/organizations/NMS-7K4P9D/inventory'])
+    renderApp([`/organizations/${workspaceCode}/inventory`])
 
     expect(await screen.findByRole('heading', { name: 'Northstar Medical Supplies' })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Detailed inventory' })).toHaveAttribute('aria-pressed', 'true')
@@ -49,13 +52,13 @@ describe('organization routing', () => {
     await user.type(await screen.findByLabelText('Organization ID'), 'bad-id')
     await user.click(screen.getByRole('button', { name: 'Open organization' }))
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Enter an organization ID such as NMS-7K4P9D')
+    expect(screen.getByRole('alert')).toHaveTextContent('Paste the complete organization ID from your saved link')
     expect(fetchMock.mock.calls.some(([input]) => input.toString().includes('/by-code/'))).toBe(false)
   })
 
   it('keeps an unknown organization route open and offers recovery actions', async () => {
     mockWorkspaceRequests()
-    renderApp(['/organizations/ABC-234567/map'])
+    renderApp(['/organizations/ABC-FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF/map'])
 
     expect(await screen.findByRole('heading', { name: 'Organization not found' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try another organization ID' })).toBeInTheDocument()
@@ -65,15 +68,15 @@ describe('organization routing', () => {
 
   it('loads the impact route directly without returning to the home page', async () => {
     mockWorkspaceRequests()
-    renderApp(['/organizations/NMS-7K4P9D/impact'])
+    renderApp([`/organizations/${workspaceCode}/impact`])
 
     expect(await screen.findByRole('button', { name: 'Test impact' })).toHaveAttribute('aria-pressed', 'true')
     expect(await screen.findByRole('heading', { name: 'Create one workflow first' })).toBeInTheDocument()
   })
 
   it.each([
-    '/organizations/NMS-7K4P9D',
-    '/organizations/NMS-7K4P9D/not-a-view',
+    `/organizations/${workspaceCode}`,
+    `/organizations/${workspaceCode}/not-a-view`,
   ])('redirects %s to the organization map', async (entry) => {
     mockWorkspaceRequests()
     renderApp([entry])
@@ -93,15 +96,15 @@ describe('organization routing', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
     mockWorkspaceRequests()
-    renderApp(['/organizations/NMS-7K4P9D/inventory'])
+    renderApp([`/organizations/${workspaceCode}/inventory`])
 
     await user.click(await screen.findByRole('button', { name: 'Copy organization ID' }))
     await user.click(screen.getByRole('button', { name: 'Copy organization link' }))
 
-    expect(writeText).toHaveBeenNthCalledWith(1, 'NMS-7K4P9D')
+    expect(writeText).toHaveBeenNthCalledWith(1, workspaceCode)
     expect(writeText).toHaveBeenNthCalledWith(
       2,
-      `${window.location.origin}/organizations/NMS-7K4P9D/map`,
+      `${window.location.origin}/organizations/${workspaceCode}/map`,
     )
     expect(screen.queryByRole('heading', { name: 'Save this organization ID' })).not.toBeInTheDocument()
   })
@@ -136,7 +139,7 @@ function mockWorkspaceRequests() {
     const url = input.toString()
     if (url.endsWith('/api/v1/dashboard')) return jsonResponse(dashboardFixture)
     if (url.endsWith('/api/v1/workspaces') && init?.method === 'POST') return jsonResponse(workspaceFixture, 201)
-    if (url.endsWith('/api/v1/workspaces/by-code/NMS-7K4P9D')) return jsonResponse(workspaceFixture)
+    if (url.endsWith(`/api/v1/workspaces/by-code/${workspaceCode}`)) return jsonResponse(workspaceFixture)
     if (url.endsWith('/catalog')) return jsonResponse(catalogFixture)
     if (url.endsWith('/impact-previews/continuity')) return jsonResponse([])
     return jsonResponse({ message: 'Organization not found' }, 404)
@@ -153,7 +156,7 @@ const workspaceFixture = {
   name: 'Northstar Medical Supplies',
   status: 'DRAFT',
   currentVersion: 0,
-  publicCode: 'NMS-7K4P9D',
+  publicCode: workspaceCode,
   createdAt: '2026-08-21T12:00:00Z',
   updatedAt: '2026-08-21T12:00:00Z',
   counts: { teams: 0, members: 0, roles: 0, permissions: 0, capabilities: 0, workflows: 0 },

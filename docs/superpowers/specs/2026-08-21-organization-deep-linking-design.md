@@ -1,6 +1,6 @@
 # Organization Deep Linking and Recovery Design
 
-**Date:** 2026-08-21  
+**Date:** 2026-08-21
 **Status:** Approved in conversation; awaiting written-spec review
 
 ## Purpose
@@ -92,7 +92,7 @@ Code properties:
 - short enough to type accurately;
 - excludes visually ambiguous characters such as `0`, `O`, `1`, and `I`.
 
-Displayed codes use a three-letter name-derived prefix followed by six random Base32-style characters, for example `NSM-7K4P9D`. The name prefix is cosmetic and is not recalculated after rename. Uniqueness is enforced by the database, and the service retries generation on the unlikely event of a collision.
+Displayed codes use a three-letter name-derived prefix followed by a 128-bit random token, for example `NSM-0123456789ABCDEF0123456789ABCDEF`. The name prefix is cosmetic and is not recalculated after rename. The full code is an editable bearer capability, uniqueness is enforced by the database, and the service retries generation on the unlikely event of a collision.
 
 The code is an unguessable locator, not authentication. The UI must state that real or sensitive company information should not be entered until authentication is added.
 

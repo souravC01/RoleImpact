@@ -39,7 +39,7 @@ export default function WorkspaceWelcome() {
     setCodeError(null)
     const normalizedCode = normalizeWorkspaceCode(organizationCode)
     if (!normalizedCode) {
-      setCodeError('Enter an organization ID such as NMS-7K4P9D')
+      setCodeError('Paste the complete organization ID from your saved link')
       return
     }
     openMutation.mutate(normalizedCode)
@@ -108,9 +108,9 @@ export default function WorkspaceWelcome() {
               <input
                 id="organization-code"
                 value={organizationCode}
-                maxLength={24}
+                maxLength={36}
                 autoCapitalize="characters"
-                placeholder="NMS-7K4P9D"
+                placeholder="NMS-0123456789ABCDEF0123456789ABCDEF"
                 onChange={(event) => {
                   setOrganizationCode(event.target.value)
                   setCodeError(null)

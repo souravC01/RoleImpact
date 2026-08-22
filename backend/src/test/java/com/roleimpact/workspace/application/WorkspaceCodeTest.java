@@ -10,20 +10,23 @@ class WorkspaceCodeTest {
 
 	@Test
 	void normalizesTypedCodesWithOrWithoutTheHyphen() {
-		assertThat(WorkspaceCode.normalize(" nsm-7k4p9d ")).isEqualTo("NSM-7K4P9D");
-		assertThat(WorkspaceCode.normalize("nsm7k4p9d")).isEqualTo("NSM-7K4P9D");
+		var displayed = "NSM-0123456789ABCDEF0123456789ABCDEF";
+
+		assertThat(WorkspaceCode.normalize(" " + displayed.toLowerCase() + " ")).isEqualTo(displayed);
+		assertThat(WorkspaceCode.normalize(displayed.replace("-", ""))).isEqualTo(displayed);
 	}
 
 	@Test
 	void rejectsMalformedOrAmbiguousCodes() {
 		assertThat(WorkspaceCode.normalize("NSM-7K4P0D")).isNull();
+		assertThat(WorkspaceCode.normalize("NSM-7K4P9D")).isNull();
 		assertThat(WorkspaceCode.normalize("not-a-code")).isNull();
 	}
 
 	@Test
-	void generatesANamePrefixAndAllowedRandomSuffix() {
+	void generatesANamePrefixAndA128BitRandomSuffix() {
 		var code = new WorkspaceCode(new SecureRandom()).generate("Northstar Medical Supplies");
 
-		assertThat(code).matches("NMS-[A-HJ-NP-Z2-9]{6}");
+		assertThat(code).matches("NMS-[A-F0-9]{32}");
 	}
 }

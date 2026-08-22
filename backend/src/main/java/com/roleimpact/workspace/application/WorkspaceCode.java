@@ -3,6 +3,7 @@ package com.roleimpact.workspace.application;
 import java.security.SecureRandom;
 import java.text.Normalizer;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -12,9 +13,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkspaceCode {
 
-	private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-	private static final Pattern COMPACT = Pattern.compile("^[A-HJ-NP-Z2-9]{9}$");
-	private static final Pattern DISPLAYED = Pattern.compile("^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{6}$");
+	private static final int TOKEN_BYTES = 16;
+	private static final Pattern SECURE_COMPACT = Pattern.compile("^[A-HJ-NP-Z2-9]{3}[A-F0-9]{32}$");
+	private static final Pattern SECURE_DISPLAYED = Pattern.compile("^[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}$");
 
 	private final SecureRandom random;
 
@@ -36,11 +37,9 @@ public class WorkspaceCode {
 				.collect(Collectors.joining());
 		String compactName = asciiName.replaceAll("[^A-Z0-9]", "");
 		String prefixSeed = sanitize(initials + compactName + "ORG");
-		StringBuilder suffix = new StringBuilder(6);
-		for (int index = 0; index < 6; index++) {
-			suffix.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
-		}
-		return prefixSeed.substring(0, 3) + "-" + suffix;
+		byte[] token = new byte[TOKEN_BYTES];
+		random.nextBytes(token);
+		return prefixSeed.substring(0, 3) + "-" + HexFormat.of().withUpperCase().formatHex(token);
 	}
 
 	public static String normalize(String rawCode) {
@@ -48,10 +47,10 @@ public class WorkspaceCode {
 			return null;
 		}
 		String candidate = rawCode.trim().toUpperCase(Locale.ROOT);
-		if (COMPACT.matcher(candidate).matches()) {
+		if (SECURE_COMPACT.matcher(candidate).matches()) {
 			candidate = candidate.substring(0, 3) + "-" + candidate.substring(3);
 		}
-		return DISPLAYED.matcher(candidate).matches() ? candidate : null;
+		return SECURE_DISPLAYED.matcher(candidate).matches() ? candidate : null;
 	}
 
 	private static String sanitize(String value) {

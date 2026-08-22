@@ -88,7 +88,7 @@ class CatalogMigrationIntegrationTest {
 				""").query(Integer.class).single();
 
 		assertThat(publicCodes).isNotEmpty()
-				.allSatisfy(code -> assertThat(code).matches("[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{6}"));
+				.allSatisfy(code -> assertThat(code).matches("[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}"));
 		assertThat(publicCodes.stream().map(String::toUpperCase).distinct().count())
 				.isEqualTo(publicCodes.size());
 		assertThat(cloneColumnCount).isZero();
@@ -115,7 +115,7 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(8);
+		assertThat(successfulMigrations).isEqualTo(9);
 		var employeeNumberNullable = jdbcClient.sql("""
 				SELECT is_nullable
 				FROM information_schema.columns
