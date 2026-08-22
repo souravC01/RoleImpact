@@ -9,7 +9,7 @@ public record WorkspaceResource(
 		String name,
 		String status,
 		int currentVersion,
-		UUID sourceTemplateOrganizationId,
+		String publicCode,
 		Instant createdAt,
 		Instant updatedAt,
 		WorkspaceCounts counts) {

@@ -288,11 +288,10 @@ class WorkspaceServiceTest {
 		when(repository.existsBySlug("northstar-medical-supplies")).thenReturn(false);
 		when(workspaceCode.generate("Northstar Medical Supplies"))
 				.thenReturn("NMS-AAAAAA", "NMS-AAAAAB");
-		doThrow(new DataIntegrityViolationException("public code collision"))
-				.doNothing()
-				.when(repository).insertDraft(any(UUID.class), eq("northstar-medical-supplies"),
-						eq("Northstar Medical Supplies"), anyString());
-		when(repository.existsByPublicCode("NMS-AAAAAA")).thenReturn(true);
+		when(repository.insertDraft(any(UUID.class), eq("northstar-medical-supplies"),
+				eq("Northstar Medical Supplies"), eq("NMS-AAAAAA"))).thenReturn(false);
+		when(repository.insertDraft(any(UUID.class), eq("northstar-medical-supplies"),
+				eq("Northstar Medical Supplies"), eq("NMS-AAAAAB"))).thenReturn(true);
 		when(repository.findById(any(UUID.class))).thenAnswer(invocation -> Optional.of(
 				workspace(invocation.getArgument(0), "NMS-AAAAAB")));
 
@@ -396,26 +395,20 @@ public Optional<WorkspaceResource> findDraftByPublicCode(String publicCode) {
 			.optional();
 }
 
-public boolean existsByPublicCode(String publicCode) {
-	return jdbcClient.sql("SELECT EXISTS (SELECT 1 FROM organizations WHERE UPPER(public_code) = :publicCode)")
-			.param("publicCode", publicCode)
-			.query(Boolean.class)
-			.single();
-}
-
-public void insertDraft(UUID id, String slug, String name, String publicCode) {
-	jdbcClient.sql("""
+public boolean insertDraft(UUID id, String slug, String name, String publicCode) {
+	return jdbcClient.sql("""
 			INSERT INTO organizations (
 			    id, slug, name, current_version, workspace_status, public_code, created_at, updated_at
 			) VALUES (
 			    :id, :slug, :name, 0, 'DRAFT', :publicCode, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 			)
+			ON CONFLICT DO NOTHING
 			""")
 			.param("id", id)
 			.param("slug", slug)
 			.param("name", name)
 			.param("publicCode", publicCode)
-			.update();
+			.update() == 1;
 }
 ```
 
@@ -433,17 +426,11 @@ public WorkspaceResource createBlank(WorkspaceRequest request) {
 	for (int attempt = 0; attempt < 5; attempt++) {
 		UUID workspaceId = UUID.randomUUID();
 		String publicCode = workspaceCode.generate(name);
-		try {
-			workspaceRepository.insertDraft(workspaceId, slug, name, publicCode);
+		if (workspaceRepository.insertDraft(workspaceId, slug, name, publicCode)) {
 			return get(workspaceId);
 		}
-		catch (DataIntegrityViolationException exception) {
-			if (workspaceRepository.existsBySlug(slug)) {
-				throw new WorkspaceConflictException("A workspace with slug '" + slug + "' already exists");
-			}
-			if (!workspaceRepository.existsByPublicCode(publicCode)) {
-				throw exception;
-			}
+		if (workspaceRepository.existsBySlug(slug)) {
+			throw new WorkspaceConflictException("A workspace with slug '" + slug + "' already exists");
 		}
 	}
 	throw new WorkspaceConflictException("A unique organization ID could not be generated; try again");

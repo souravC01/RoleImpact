@@ -1,7 +1,6 @@
 package com.roleimpact.workspace.api;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 import com.roleimpact.workspace.application.WorkspaceService;
@@ -27,14 +26,14 @@ public class WorkspaceController {
 		this.workspaceService = workspaceService;
 	}
 
-	@GetMapping
-	public List<WorkspaceResource> list() {
-		return workspaceService.list();
-	}
-
 	@GetMapping("/{workspaceId}")
 	public WorkspaceResource get(@PathVariable UUID workspaceId) {
 		return workspaceService.get(workspaceId);
+	}
+
+	@GetMapping("/by-code/{publicCode}")
+	public WorkspaceResource getByCode(@PathVariable String publicCode) {
+		return workspaceService.getEditableByCode(publicCode);
 	}
 
 	@PostMapping
@@ -42,17 +41,10 @@ public class WorkspaceController {
 		return created(workspaceService.createBlank(request));
 	}
 
-	@PostMapping("/{sourceWorkspaceId}/clones")
-	public ResponseEntity<WorkspaceResource> clone(
-			@PathVariable UUID sourceWorkspaceId,
-			@Valid @RequestBody WorkspaceRequest request) {
-		return created(workspaceService.clonePublished(sourceWorkspaceId, request));
-	}
-
 	private ResponseEntity<WorkspaceResource> created(WorkspaceResource workspace) {
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
-				.path("/api/v1/workspaces/{id}")
-				.buildAndExpand(workspace.id())
+				.path("/api/v1/workspaces/by-code/{publicCode}")
+				.buildAndExpand(workspace.publicCode())
 				.toUri();
 		return ResponseEntity.created(location).body(workspace);
 	}
