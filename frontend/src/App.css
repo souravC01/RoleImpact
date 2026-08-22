@@ -1638,6 +1638,9 @@
 .draft-recommendation-card > div > strong { font-size: 0.82rem; }
 .draft-recommendation-card > button { min-width: 9.5rem; }
 .draft-recommendation-rank { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 50%; background: #21382c; color: #8de0b5; font-size: 0.7rem; font-weight: 900; }
+.recommendation-alignment { width: fit-content; padding: 0.22rem 0.42rem; border-radius: 999px; font-size: 0.58rem; font-weight: 850; letter-spacing: 0.025em; }
+.recommendation-alignment.aligned { background: #173b2a; color: #8de0b5; }
+.recommendation-alignment.review { background: #332a1a; color: #f5ca72; }
 .draft-recommendation-evidence { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .draft-recommendation-evidence span { padding: 0.22rem 0.38rem; border-radius: 999px; background: #222a26; color: #9dc4ad; font-size: 0.56rem; font-weight: 700; }
 .draft-candidate-exclusions { border-top: 1px solid #2d3240; padding-top: 0.8rem; }

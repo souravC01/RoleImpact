@@ -172,6 +172,7 @@ export default function DraftImpactTesting({ workspaceId, catalog, risks, isCont
         {mitigationMutation.data ? <ReplacementAssessment original={mitigationMutation.data.original} mitigation={mitigationMutation.data.mitigation} /> : null}
         {originalResult ? (
           <DraftMitigationPanel
+            catalog={catalog}
             result={originalResult}
             mitigation={mitigationMutation.data?.mitigation}
             isPending={mitigationMutation.isPending}
@@ -216,7 +217,8 @@ function ReplacementAssessment({ original, mitigation }: { original: DraftImpact
   )
 }
 
-function DraftMitigationPanel({ result, mitigation, isPending, error, onTest }: {
+function DraftMitigationPanel({ catalog, result, mitigation, isPending, error, onTest }: {
+  catalog: DraftCatalog
   result: DraftImpactResult
   mitigation?: DraftImpactResult
   isPending: boolean
@@ -235,14 +237,15 @@ function DraftMitigationPanel({ result, mitigation, isPending, error, onTest }: 
 
   return (
     <section className="draft-mitigation-panel" aria-labelledby="draft-mitigation-title">
-      <div className="draft-mitigation-heading"><div><p className="section-kicker">Step 3</p><h3 id="draft-mitigation-title">Test a safe replacement</h3><p>These options come from the same deterministic eligibility and workflow rules used by the impact test.</p></div><span>{result.recommendations.length} safe option{result.recommendations.length === 1 ? '' : 's'}</span></div>
+      <div className="draft-mitigation-heading"><div><p className="section-kicker">Step 3</p><h3 id="draft-mitigation-title">Compare technically viable replacements</h3><p>Every option restores the configured workflow rules. Team alignment and added access explain why one option ranks above another.</p></div><span>{result.recommendations.length} viable option{result.recommendations.length === 1 ? '' : 's'}</span></div>
       <div className="draft-recommendation-list">
         {result.recommendations.map((recommendation) => {
           const tested = mitigation?.changeSet.replacementEmployee?.id === recommendation.candidate.id
+          const alignment = describeRecommendationAlignment(catalog, result, recommendation)
           return (
             <article className={`draft-recommendation-card ${tested ? 'tested' : ''}`} key={recommendation.id}>
               <span className="draft-recommendation-rank">{String(recommendation.rank).padStart(2, '0')}</span>
-              <div><strong>Assign {recommendation.role.name} to {recommendation.candidate.name}</strong><p>This restores {formatEntityNames(recommendation.restoredWorkflowSteps)} with {recommendation.gainedPermissions.length} additional effective permission{recommendation.gainedPermissions.length === 1 ? '' : 's'}.</p><div className="draft-recommendation-evidence">{recommendation.evidence.map((evidence) => <span key={evidence}>{evidenceLabel(evidence)}</span>)}</div></div>
+              <div><span className={`recommendation-alignment ${alignment.tone}`}>{alignment.label}</span><strong>Assign {recommendation.role.name} to {recommendation.candidate.name}</strong><p>{alignment.reason}</p><p>This restores {formatEntityNames(recommendation.restoredWorkflowSteps)} with {recommendation.gainedPermissions.length} additional effective permission{recommendation.gainedPermissions.length === 1 ? '' : 's'}.</p><div className="draft-recommendation-evidence">{recommendation.evidence.map((evidence) => <span key={evidence}>{evidenceLabel(evidence)}</span>)}</div></div>
               <button type="button" disabled={isPending} onClick={() => onTest(recommendation.candidate.id)}>{isPending ? 'Testing mitigation…' : tested ? 'Test mitigation again' : 'Test this mitigation'}</button>
             </article>
           )
@@ -252,6 +255,38 @@ function DraftMitigationPanel({ result, mitigation, isPending, error, onTest }: 
       {result.excludedCandidateReasons.length > 0 ? <CandidateExclusions result={result} /> : null}
     </section>
   )
+}
+
+function describeRecommendationAlignment(
+  catalog: DraftCatalog,
+  result: DraftImpactResult,
+  recommendation: DraftImpactResult['recommendations'][number],
+) {
+  const source = catalog.members.find((member) => member.id === result.changeSet.employee.id)
+  const candidate = catalog.members.find((member) => member.id === recommendation.candidate.id)
+  const sourceTeam = catalog.teams.find((team) => team.id === source?.teamId)
+  const candidateTeam = catalog.teams.find((team) => team.id === candidate?.teamId)
+  const addedAccess = `${recommendation.gainedPermissions.length} new effective permission${recommendation.gainedPermissions.length === 1 ? '' : 's'}`
+
+  if (sourceTeam && candidateTeam && sourceTeam.id === candidateTeam.id) {
+    return {
+      label: recommendation.rank === 1 ? 'Best aligned · same team' : 'Same-team alternative',
+      tone: 'aligned',
+      reason: `Ranked #${recommendation.rank} because ${recommendation.candidate.name} is in the same team as ${result.changeSet.employee.name}. The proposed assignment requires ${addedAccess}.`,
+    }
+  }
+  if (sourceTeam && candidateTeam && sourceTeam.department === candidateTeam.department) {
+    return {
+      label: 'Cross-team · same department',
+      tone: 'review',
+      reason: `Ranked #${recommendation.rank} as a technically viable cross-team option within ${sourceTeam.department}. Review the transfer of responsibility before granting ${addedAccess}.`,
+    }
+  }
+  return {
+    label: 'Cross-department alternative',
+    tone: 'review',
+    reason: `Ranked #${recommendation.rank} because the configured workflow rules are restored, but this crosses organizational boundaries and requires ${addedAccess}.`,
+  }
 }
 
 function CandidateExclusions({ result }: { result: DraftImpactResult }) {

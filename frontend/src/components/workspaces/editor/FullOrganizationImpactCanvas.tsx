@@ -329,7 +329,7 @@ function buildImpactModel(
       if (entityId === replacementMemberId) {
         simulationState = replacementState; badge = replacementState === 'restored' ? 'Tried · restores coverage' : 'Tried · does not restore'; detail = 'Proposed role holder · click another member to compare'
       } else if (displayedResult && entityId === sourceMemberId) {
-        simulationState = 'removed'; badge = 'Role removed'
+        simulationState = 'removed'; badge = 'Assignment removed'
       } else if (recommendationRank.has(entityId)) {
         simulationState = 'candidate'; badge = `Recommended #${recommendationRank.get(entityId)}`; detail = 'Click to test as replacement'
       } else if (originalResult && exclusions.has(entityId) && entityId !== sourceMemberId) {
@@ -340,7 +340,25 @@ function buildImpactModel(
         simulationState = 'source'; badge = 'Selected source'
       }
     } else if (node.data.entityType === 'role' && entityId === roleId && displayedResult) {
-      simulationState = replacementState ?? 'removed'; badge = replacementState === 'restored' ? 'Reassigned · restored' : replacementState ? 'Reassigned · insufficient' : 'Removed'
+      if (replacementState) {
+        simulationState = replacementState
+        badge = replacementState === 'restored' ? 'Reassigned · restored' : 'Reassigned · insufficient'
+      } else {
+        const remainingHolderCount = catalog.members.filter((member) => member.id !== sourceMemberId && member.roleIds.includes(entityId)).length
+        if (remainingHolderCount === 0) {
+          simulationState = 'removed'
+          badge = 'No holders remain'
+        } else {
+          const supportingStates = catalog.workflows
+            .flatMap((workflow) => workflow.requirements)
+            .filter((requirement) => requirement.roleIds.includes(entityId))
+            .map((requirement) => stepStates.get(requirement.id))
+          simulationState = supportingStates.includes('blocked') ? 'blocked' : supportingStates.includes('degraded') ? 'degraded' : 'source'
+          badge = `${remainingHolderCount} holder${remainingHolderCount === 1 ? '' : 's'} remain`
+          const sourceName = catalog.members.find((member) => member.id === sourceMemberId)?.name ?? 'the selected member'
+          detail = `Only ${sourceName}'s assignment is removed. This shared role remains available through ${remainingHolderCount} other holder${remainingHolderCount === 1 ? '' : 's'}.`
+        }
+      }
     } else if (node.data.entityType === 'responsibility') {
       simulationState = stepStates.get(entityId)
       if (simulationState) badge = stateBadge(simulationState)
@@ -468,6 +486,7 @@ function stateBadge(state: OrganizationSimulationState) {
   if (state === 'blocked') return 'Blocked'
   if (state === 'degraded') return 'Degraded'
   if (state === 'restored') return 'Restored'
+  if (state === 'source') return 'Still operational'
   return undefined
 }
 
