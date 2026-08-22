@@ -62,8 +62,10 @@ docker compose up -d
 In a second terminal, start the API:
 
 ```powershell
-.\backend\mvnw.cmd spring-boot:run
+\.\backend\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+With the `dev` profile active, Boot UI is available at <http://localhost:8080/bootui>.
 
 In a third terminal, install and start the frontend:
 

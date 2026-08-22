@@ -22,13 +22,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
@@ -42,7 +42,7 @@ class CatalogMigrationIntegrationTest {
 
 	@Container
 	@ServiceConnection
-	static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+	static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine")
 			.withDatabaseName("roleimpact")
 			.withUsername("roleimpact")
 			.withPassword("roleimpact");
@@ -115,13 +115,31 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(7);
+		assertThat(successfulMigrations).isEqualTo(8);
 		var employeeNumberNullable = jdbcClient.sql("""
 				SELECT is_nullable
 				FROM information_schema.columns
 				WHERE table_schema = 'public' AND table_name = 'employees' AND column_name = 'employee_no'
 				""").query(String.class).single();
 		assertThat(employeeNumberNullable).isEqualTo("YES");
+	}
+
+	@Test
+	void addsCompositeIndexesForForeignKeyLookups() {
+		var indexes = jdbcClient.sql("""
+				SELECT indexname
+				FROM pg_indexes
+				WHERE schemaname = 'public'
+				  AND indexname IN (
+				      'idx_permissions_resource_application',
+				      'idx_simulations_organization_baseline_version'
+				  )
+				ORDER BY indexname
+				""").query(String.class).list();
+
+		assertThat(indexes).containsExactly(
+				"idx_permissions_resource_application",
+				"idx_simulations_organization_baseline_version");
 	}
 
 	@Test
