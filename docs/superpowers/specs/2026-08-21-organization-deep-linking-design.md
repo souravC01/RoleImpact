@@ -92,7 +92,7 @@ Code properties:
 - short enough to type accurately;
 - excludes visually ambiguous characters such as `0`, `O`, `1`, and `I`.
 
-Displayed codes use a three-letter name-derived prefix followed by a 128-bit random token, for example `NSM-0123456789ABCDEF0123456789ABCDEF`. The name prefix is cosmetic and is not recalculated after rename. The full code is an editable bearer capability, uniqueness is enforced by the database, and the service retries generation on the unlikely event of a collision.
+New codes use a three-letter name-derived prefix followed by a 16-character Base32-style random token (80 bits), for example `NSM-7K4P9D8XM2QR6WBC`. The name prefix is cosmetic and is not recalculated after rename. Existing 32-character IDs remain valid and unchanged until the development database is cleared. The full code is an editable bearer capability, uniqueness is enforced by the database, and the service retries generation on the unlikely event of a collision.
 
 The code is an unguessable locator, not authentication. The UI must state that real or sensitive company information should not be entered until authentication is added.
 

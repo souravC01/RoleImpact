@@ -3,7 +3,6 @@ package com.roleimpact.workspace.application;
 import java.security.SecureRandom;
 import java.text.Normalizer;
 import java.util.Arrays;
-import java.util.HexFormat;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -13,9 +12,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkspaceCode {
 
-	private static final int TOKEN_BYTES = 16;
-	private static final Pattern SECURE_COMPACT = Pattern.compile("^[A-HJ-NP-Z2-9]{3}[A-F0-9]{32}$");
-	private static final Pattern SECURE_DISPLAYED = Pattern.compile("^[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}$");
+	private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+	private static final int TOKEN_LENGTH = 16;
+	private static final Pattern SHORT_COMPACT = Pattern.compile("^[A-HJ-NP-Z2-9]{19}$");
+	private static final Pattern SHORT_DISPLAYED = Pattern.compile("^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{16}$");
+	private static final Pattern LONG_COMPACT = Pattern.compile("^[A-HJ-NP-Z2-9]{3}[A-F0-9]{32}$");
+	private static final Pattern LONG_DISPLAYED = Pattern.compile("^[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}$");
 
 	private final SecureRandom random;
 
@@ -37,9 +39,11 @@ public class WorkspaceCode {
 				.collect(Collectors.joining());
 		String compactName = asciiName.replaceAll("[^A-Z0-9]", "");
 		String prefixSeed = sanitize(initials + compactName + "ORG");
-		byte[] token = new byte[TOKEN_BYTES];
-		random.nextBytes(token);
-		return prefixSeed.substring(0, 3) + "-" + HexFormat.of().withUpperCase().formatHex(token);
+		StringBuilder token = new StringBuilder(TOKEN_LENGTH);
+		for (int index = 0; index < TOKEN_LENGTH; index++) {
+			token.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
+		}
+		return prefixSeed.substring(0, 3) + "-" + token;
 	}
 
 	public static String normalize(String rawCode) {
@@ -47,10 +51,12 @@ public class WorkspaceCode {
 			return null;
 		}
 		String candidate = rawCode.trim().toUpperCase(Locale.ROOT);
-		if (SECURE_COMPACT.matcher(candidate).matches()) {
+		if (SHORT_COMPACT.matcher(candidate).matches() || LONG_COMPACT.matcher(candidate).matches()) {
 			candidate = candidate.substring(0, 3) + "-" + candidate.substring(3);
 		}
-		return SECURE_DISPLAYED.matcher(candidate).matches() ? candidate : null;
+		return SHORT_DISPLAYED.matcher(candidate).matches() || LONG_DISPLAYED.matcher(candidate).matches()
+				? candidate
+				: null;
 	}
 
 	private static String sanitize(String value) {

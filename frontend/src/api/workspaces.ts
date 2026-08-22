@@ -26,6 +26,8 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export function normalizeWorkspaceCode(rawCode: string): string | null {
   const candidate = rawCode.trim().toUpperCase()
+  if (/^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{16}$/.test(candidate)) return candidate
+  if (/^[A-HJ-NP-Z2-9]{19}$/.test(candidate)) return `${candidate.slice(0, 3)}-${candidate.slice(3)}`
   if (/^[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}$/.test(candidate)) return candidate
   if (/^[A-HJ-NP-Z2-9]{3}[A-F0-9]{32}$/.test(candidate)) return `${candidate.slice(0, 3)}-${candidate.slice(3)}`
   return null

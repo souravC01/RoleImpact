@@ -115,7 +115,7 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(9);
+		assertThat(successfulMigrations).isEqualTo(10);
 		var employeeNumberNullable = jdbcClient.sql("""
 				SELECT is_nullable
 				FROM information_schema.columns

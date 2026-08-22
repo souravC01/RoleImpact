@@ -110,7 +110,7 @@ export default function WorkspaceWelcome() {
                 value={organizationCode}
                 maxLength={36}
                 autoCapitalize="characters"
-                placeholder="NMS-0123456789ABCDEF0123456789ABCDEF"
+                placeholder="NMS-7K4P9D8XM2QR6WBC"
                 onChange={(event) => {
                   setOrganizationCode(event.target.value)
                   setCodeError(null)

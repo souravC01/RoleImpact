@@ -60,7 +60,7 @@ class WorkspaceIntegrationTest {
 				.andExpect(jsonPath("$.status").value("DRAFT"))
 				.andExpect(jsonPath("$.currentVersion").value(0))
 				.andExpect(jsonPath("$.publicCode")
-						.value(org.hamcrest.Matchers.matchesPattern("NMS-[A-F0-9]{32}")))
+						.value(org.hamcrest.Matchers.matchesPattern("NMS-[A-HJ-NP-Z2-9]{16}")))
 				.andExpect(jsonPath("$.counts.members").value(0))
 				.andExpect(jsonPath("$.counts.workflows").value(0))
 				.andReturn();
