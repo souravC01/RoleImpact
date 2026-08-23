@@ -26,6 +26,3 @@ services:
         value: "0"
       - key: JAVA_TOOL_OPTIONS
         value: -XX:InitialRAMPercentage=10.0 -XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError
-
-previews:
-  generation: none
