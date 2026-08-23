@@ -1,0 +1,31 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:5}
+      minimum-idle: ${DB_MIN_IDLE:0}
+      connection-timeout: 30000
+      validation-timeout: 5000
+      max-lifetime: 840000
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+roleimpact:
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN}
+
+bootui:
+  enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health,info
