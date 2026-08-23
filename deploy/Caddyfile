@@ -1,0 +1,11 @@
+{$API_DOMAIN} {
+    encode zstd gzip
+
+    reverse_proxy api:8080 {
+        health_uri /actuator/health
+        health_interval 10s
+        health_timeout 3s
+        fail_duration 30s
+        max_fails 3
+    }
+}

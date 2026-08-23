@@ -1,0 +1,42 @@
+name: roleimpact
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: roleimpact-api:production
+    restart: unless-stopped
+    env_file:
+      - ${PRODUCTION_ENV_FILE:-./deploy/production.env}
+    expose:
+      - "8080"
+    networks:
+      - api_internal
+      - egress
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN in deploy/production.env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - api_internal
+
+networks:
+  edge:
+  egress:
+  api_internal:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:

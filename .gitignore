@@ -1,4 +1,5 @@
 .env
+deploy/production.env
 .idea/
 .vscode/
 *.iml
