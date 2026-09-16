@@ -52,11 +52,11 @@ class WorkspaceIntegrationTest {
 	@Test
 	void createsAndResolvesAnEditableDraftByPublicCode() throws Exception {
 		var blankResponse = mockMvc.perform(post("/api/v1/workspaces")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(workspaceRequest("Northstar Medical Supplies", null)))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(workspaceRequest("Northwind Medical Supplies", null)))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/workspaces/by-code/")))
-				.andExpect(jsonPath("$.slug").value("northstar-medical-supplies"))
+				.andExpect(jsonPath("$.slug").value("northwind-medical-supplies"))
 				.andExpect(jsonPath("$.status").value("DRAFT"))
 				.andExpect(jsonPath("$.currentVersion").value(0))
 				.andExpect(jsonPath("$.publicCode")
@@ -75,6 +75,28 @@ class WorkspaceIntegrationTest {
 
 		assertThat(workspaceState(HARBORLINE_ID)).isEqualTo("PUBLISHED|1");
 		assertThat(workspaceState(blankId)).isEqualTo("DRAFT|0");
+	}
+
+	@Test
+	void createsIndependentOrganizationsWithTheSameCompanyName() throws Exception {
+		var firstResponse = mockMvc.perform(post("/api/v1/workspaces")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(workspaceRequest("Twin Peak Logistics", null)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.name").value("Twin Peak Logistics"))
+				.andReturn();
+		var secondResponse = mockMvc.perform(post("/api/v1/workspaces")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(workspaceRequest("Twin Peak Logistics", null)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.name").value("Twin Peak Logistics"))
+				.andReturn();
+
+		var first = objectMapper.readTree(firstResponse.getResponse().getContentAsString());
+		var second = objectMapper.readTree(secondResponse.getResponse().getContentAsString());
+		assertThat(second.path("id").asText()).isNotEqualTo(first.path("id").asText());
+		assertThat(second.path("publicCode").asText()).isNotEqualTo(first.path("publicCode").asText());
+		assertThat(second.path("slug").asText()).isNotEqualTo(first.path("slug").asText());
 	}
 
 	@Test

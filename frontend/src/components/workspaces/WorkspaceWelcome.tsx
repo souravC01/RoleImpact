@@ -15,7 +15,7 @@ export default function WorkspaceWelcome() {
   const [blankName, setBlankName] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
   const dashboardQuery = useQuery({
-    queryKey: ['dashboard', 'harborline-commerce'],
+    queryKey: ['dashboard', 'northstar-public-demo'],
     queryFn: ({ signal }) => fetchDashboard(signal),
     retry: 1,
   })
@@ -59,10 +59,6 @@ export default function WorkspaceWelcome() {
           <span className="brand-mark" aria-hidden="true">R</span>
           <span>RoleImpact</span>
         </a>
-        <span className="workspace-home-status">
-          <span className="connection-dot" aria-hidden="true" />
-          Local workspace
-        </span>
       </header>
 
       <main className="workspace-home-main">
@@ -79,9 +75,9 @@ export default function WorkspaceWelcome() {
           <article className="workspace-choice featured-choice">
             <span className="choice-number">01</span>
             <div>
-              <p className="section-kicker">Learn from the example</p>
-              <h2>Explore Harborline</h2>
-              <p>See Priya’s role change travel through a complete, realistic business workflow.</p>
+              <p className="section-kicker">Guided live demo</p>
+              <h2>Explore a live continuity risk</h2>
+              <p>See how one missing bank-payment role blocks a critical workflow—and how RoleImpact finds a safe replacement.</p>
             </div>
             <dl className="workspace-mini-stats">
               <div><dt>Members</dt><dd>{counts?.employees ?? '—'}</dd></div>
@@ -89,7 +85,7 @@ export default function WorkspaceWelcome() {
               <div><dt>Workflows</dt><dd>{counts?.workflows ?? '—'}</dd></div>
             </dl>
             <button type="button" onClick={() => navigate('/example')}>
-              Explore the example
+              Explore the live demo
             </button>
             {dashboardQuery.isError ? (
               <p className="form-error" role="status">Example statistics are temporarily unavailable.</p>

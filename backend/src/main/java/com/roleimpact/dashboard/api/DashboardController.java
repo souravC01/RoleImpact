@@ -19,7 +19,7 @@ public class DashboardController {
 
 	@GetMapping
 	public DashboardResponse getDashboard(
-			@RequestParam(name = "organization", defaultValue = "harborline-commerce") String organizationSlug) {
+			@RequestParam(name = "organization", defaultValue = "northstar-public-demo") String organizationSlug) {
 		return dashboardQueryService.getDashboard(organizationSlug);
 	}
 }
