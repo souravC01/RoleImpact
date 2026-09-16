@@ -32,17 +32,20 @@ and mitigation vertical slice:
   or excluded replacements without changing the organization baseline
 - Selectable graph nodes, original/mitigation toggling, and an accessible text
   representation of every relationship path
-- Flyway-managed relational schema and Harborline Commerce seed
+- Flyway-managed relational schema with published Northstar demo data
 - Backend unit and real-PostgreSQL integration tests
 - Frontend unit tests
 
-## Seeded Harborline baseline
+## Published Northstar demo
 
-The version 1 baseline contains 25 employees, five teams, eight roles, six
-applications, 23 permissions, ten capabilities, four workflows, and eleven
-workflow steps. It includes the primary Priya Sharma role-revocation scenario,
-Bob Chen as a potential mitigation candidate, and supporting refund and release
-coverage scenarios.
+The public version 1 demo models Northstar Medical Supplies with six employees,
+two teams, four roles, and the critical Vendor Payment Run. Daniel Brooks is the
+only Bank Payment Releaser, so removing that assignment blocks the bank-release
+step. Nia Kapoor is ranked first as a safe replacement because she is active,
+works in the same Treasury Operations team, already has Bank Portal access, and
+restores the workflow without worsening another process. The published snapshot
+is read-only. The older Harborline seed remains available for regression coverage
+but is no longer presented as the product demo.
 
 ## Prerequisites
 
@@ -74,10 +77,9 @@ npm --prefix frontend install
 npm --prefix frontend run dev
 ```
 
-Open <http://localhost:5173>. Run the Priya Sharma scenario, inspect the red and
-amber impact paths, review Bob Chen's recommendation, and test the mitigation to
-see the restored green relationship graph alongside the Low residual access
-impact.
+Open <http://localhost:5173>. Choose **Explore the live demo**, inspect the
+Northstar dependency graph, test Daniel Brooks's access removal, and verify Nia
+Kapoor's mitigation to see the restored green relationship graph.
 
 Editable organizations can be reopened from the homepage using their public ID
 with or without the displayed hyphen. Anyone with an organization ID or link can
@@ -86,7 +88,7 @@ personal data.
 
 ## Frontend routes
 
-- `/example` opens the read-only Harborline example.
+- `/example` opens the read-only, graph-first Northstar continuity demo.
 - `/organizations/{publicCode}/map` opens an editable organization map.
 - `/organizations/{publicCode}/inventory` opens its detailed inventory.
 - `/organizations/{publicCode}/impact` opens a fresh impact-testing screen.
@@ -100,7 +102,7 @@ Production hosting must rewrite non-asset, non-API routes to
 
 ## API endpoints
 
-- `GET /api/v1/dashboard` loads the default Harborline Commerce dashboard.
+- `GET /api/v1/dashboard` loads the default Northstar Medical Supplies dashboard.
 - `GET /api/v1/dashboard?organization={slug}` loads another organization or
   returns `404` when the slug does not exist.
 - `POST /api/v1/simulations` runs and saves a revoke-role simulation.

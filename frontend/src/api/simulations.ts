@@ -144,19 +144,22 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const primaryScenario = {
   schemaVersion: '1.0',
-  organizationId: '00000000-0000-0000-0000-000000000001',
+  organizationId: '00000000-0000-0000-0000-000000000002',
   baselineVersion: 1,
   change: {
     type: 'REVOKE_EMPLOYEE_ROLE',
-    employeeId: '20000000-0000-0000-0000-000000000001',
-    roleId: '30000000-0000-0000-0000-000000000002',
+    employeeId: '22000000-0000-0000-0000-000000000005',
+    roleId: '33000000-0000-0000-0000-000000000003',
   },
 } as const
 
 export async function runPrimarySimulation(): Promise<Simulation> {
   const response = await fetch(`${apiBaseUrl}/api/v1/simulations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Idempotency-Key': 'northstar-public-demo-v1',
+    },
     body: JSON.stringify(primaryScenario),
   })
 

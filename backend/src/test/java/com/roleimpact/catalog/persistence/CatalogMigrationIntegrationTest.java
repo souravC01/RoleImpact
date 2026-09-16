@@ -39,6 +39,10 @@ class CatalogMigrationIntegrationTest {
 	private static final UUID PRIYA_ID = UUID.fromString("20000000-0000-0000-0000-000000000001");
 	private static final UUID BOB_ID = UUID.fromString("20000000-0000-0000-0000-000000000002");
 	private static final UUID FINANCE_APPROVER_ID = UUID.fromString("30000000-0000-0000-0000-000000000002");
+	private static final UUID NORTHSTAR_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+	private static final UUID DANIEL_ID = UUID.fromString("22000000-0000-0000-0000-000000000005");
+	private static final UUID NIA_ID = UUID.fromString("22000000-0000-0000-0000-000000000006");
+	private static final UUID BANK_PAYMENT_RELEASER_ID = UUID.fromString("33000000-0000-0000-0000-000000000003");
 
 	@Container
 	@ServiceConnection
@@ -88,24 +92,25 @@ class CatalogMigrationIntegrationTest {
 				""").query(Integer.class).single();
 
 		assertThat(publicCodes).isNotEmpty()
-				.allSatisfy(code -> assertThat(code).matches("[A-HJ-NP-Z2-9]{3}-[A-F0-9]{32}"));
+				.allSatisfy(code -> assertThat(code).matches(
+						"[A-HJ-NP-Z2-9]{3}-(?:[A-HJ-NP-Z2-9]{16}|[A-F0-9]{32})"));
 		assertThat(publicCodes.stream().map(String::toUpperCase).distinct().count())
 				.isEqualTo(publicCodes.size());
 		assertThat(cloneColumnCount).isZero();
 	}
 
 	@Test
-	void appliesSchemaAndLoadsTheCompleteHarborlineBaseline() {
-		assertThat(count("organizations")).isEqualTo(1);
-		assertThat(count("teams")).isEqualTo(5);
-		assertThat(count("employees")).isEqualTo(25);
-		assertThat(count("roles")).isEqualTo(8);
-		assertThat(count("applications")).isEqualTo(6);
-		assertThat(count("permissions")).isEqualTo(23);
-		assertThat(count("capabilities")).isEqualTo(10);
-		assertThat(count("workflows")).isEqualTo(4);
-		assertThat(count("workflow_steps")).isEqualTo(11);
-		assertThat(count("workflow_constraints")).isEqualTo(3);
+	void appliesSchemaAndLoadsBothPublishedBaselines() {
+		assertThat(count("organizations")).isEqualTo(2);
+		assertThat(count("teams")).isEqualTo(7);
+		assertThat(count("employees")).isEqualTo(31);
+		assertThat(count("roles")).isEqualTo(12);
+		assertThat(count("applications")).isEqualTo(8);
+		assertThat(count("permissions")).isEqualTo(27);
+		assertThat(count("capabilities")).isEqualTo(13);
+		assertThat(count("workflows")).isEqualTo(5);
+		assertThat(count("workflow_steps")).isEqualTo(14);
+		assertThat(count("workflow_constraints")).isEqualTo(4);
 
 		var successfulMigrations = jdbcClient.sql("""
 				SELECT COUNT(*)
@@ -115,7 +120,7 @@ class CatalogMigrationIntegrationTest {
 				.query(Integer.class)
 				.single();
 
-		assertThat(successfulMigrations).isEqualTo(10);
+		assertThat(successfulMigrations).isEqualTo(11);
 		var employeeNumberNullable = jdbcClient.sql("""
 				SELECT is_nullable
 				FROM information_schema.columns
@@ -270,19 +275,49 @@ class CatalogMigrationIntegrationTest {
 	}
 
 	@Test
-	void servesTheSeededDashboardFromTheSnapshotBoundary() throws Exception {
+	void servesNorthstarAsTheDefaultPublishedDemo() throws Exception {
 		mockMvc.perform(get("/api/v1/dashboard"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.organization.slug").value("harborline-commerce"))
+				.andExpect(jsonPath("$.organization.slug").value("northstar-public-demo"))
+				.andExpect(jsonPath("$.organization.name").value("Northstar Medical Supplies"))
 				.andExpect(jsonPath("$.organization.baselineVersion").value(1))
-				.andExpect(jsonPath("$.counts.employees").value(25))
-				.andExpect(jsonPath("$.counts.activeEmployees").value(24))
-				.andExpect(jsonPath("$.counts.roles").value(8))
-				.andExpect(jsonPath("$.counts.applications").value(6))
-				.andExpect(jsonPath("$.counts.permissions").value(23))
-				.andExpect(jsonPath("$.counts.workflows").value(4))
-				.andExpect(jsonPath("$.workflows[0].name").value("Production Deployment"))
+				.andExpect(jsonPath("$.counts.employees").value(6))
+				.andExpect(jsonPath("$.counts.activeEmployees").value(6))
+				.andExpect(jsonPath("$.counts.roles").value(4))
+				.andExpect(jsonPath("$.counts.workflows").value(1))
+				.andExpect(jsonPath("$.workflows[0].name").value("Vendor Payment Run"))
 				.andExpect(jsonPath("$.workflows[0].criticality").value("CRITICAL"));
+	}
+
+	@Test
+	void blocksTheCanonicalNorthstarPaymentRunAndRanksNiaFirst() throws Exception {
+		mockMvc.perform(post("/api/v1/simulations")
+					.header("Idempotency-Key", "test-northstar-public-demo")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "schemaVersion":"1.0",
+							  "organizationId":"%s",
+							  "baselineVersion":1,
+							  "change":{"type":"REVOKE_EMPLOYEE_ROLE","employeeId":"%s","roleId":"%s"}
+							}
+							""".formatted(NORTHSTAR_ID, DANIEL_ID, BANK_PAYMENT_RELEASER_ID)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.result.overallSeverity").value("CRITICAL"))
+				.andExpect(jsonPath("$.result.executiveSummary.workflowsBlocked").value(1))
+				.andExpect(jsonPath("$.result.workflowImpacts[0].workflowName").value("Vendor Payment Run"))
+				.andExpect(jsonPath("$.result.workflowImpacts[0].scenarioStatus").value("BLOCKED"))
+				.andExpect(jsonPath("$.result.recommendations[0].candidate.id").value(NIA_ID.toString()))
+				.andExpect(jsonPath("$.result.recommendations[0].candidate.name").value("Nia Kapoor"));
+	}
+
+	@Test
+	void rejectsCatalogChangesToThePublishedNorthstarDemo() throws Exception {
+		mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/catalog/teams", NORTHSTAR_ID)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"name\":\"Injected team\",\"department\":\"Demo\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("DRAFT_CATALOG_CONFLICT"));
 	}
 
 	@Test

@@ -41,11 +41,13 @@ public class WorkspaceService {
 	@Transactional
 	public WorkspaceResource createBlank(WorkspaceRequest request) {
 		String name = request.name().trim();
-		String slug = resolveSlug(request, name);
-		if (workspaceRepository.existsBySlug(slug)) {
-			throw slugConflict(slug);
+		String baseSlug = resolveSlug(request, name);
+		boolean generatedSlug = request.slug() == null;
+		if (!generatedSlug && workspaceRepository.existsBySlug(baseSlug)) {
+			throw slugConflict(baseSlug);
 		}
 
+		String slug = baseSlug;
 		for (int attempt = 0; attempt < 5; attempt++) {
 			UUID workspaceId = UUID.randomUUID();
 			String publicCode = workspaceCode.generate(name);
@@ -53,10 +55,18 @@ public class WorkspaceService {
 				return get(workspaceId);
 			}
 			if (workspaceRepository.existsBySlug(slug)) {
-				throw slugConflict(slug);
+				if (!generatedSlug) {
+					throw slugConflict(slug);
+				}
+				slug = collisionSafeSlug(baseSlug, workspaceId);
 			}
 		}
 		throw new WorkspaceConflictException("A unique organization ID could not be generated; try again");
+	}
+
+	private String collisionSafeSlug(String baseSlug, UUID workspaceId) {
+		String suffix = "-" + workspaceId.toString().substring(0, 8);
+		return baseSlug.substring(0, Math.min(baseSlug.length(), 80 - suffix.length())) + suffix;
 	}
 
 	private WorkspaceConflictException slugConflict(String slug) {

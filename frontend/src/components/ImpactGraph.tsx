@@ -16,6 +16,7 @@ import type { GraphNodeType, GraphState, Simulation } from '../api/simulations'
 type ImpactGraphProps = {
   original: Simulation
   mitigation?: Simulation
+  title?: string
 }
 
 type ImpactNodeData = {
@@ -48,7 +49,7 @@ const stateColors: Record<GraphState, string> = {
   RESTORED: '#4ade80',
 }
 
-export default function ImpactGraph({ original, mitigation }: ImpactGraphProps) {
+export default function ImpactGraph({ original, mitigation, title = 'Focused impact graph' }: ImpactGraphProps) {
   const [view, setView] = useState<'impact' | 'mitigation'>('impact')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const mitigationId = mitigation?.id
@@ -77,7 +78,7 @@ export default function ImpactGraph({ original, mitigation }: ImpactGraphProps) 
       <div className="graph-heading">
         <div>
           <p className="section-kicker">Visual blast radius</p>
-          <h3 id="impact-graph-title">Focused impact graph</h3>
+          <h3 id="impact-graph-title">{title}</h3>
           <p>
             Follow the changed assignment through permissions and capabilities to the business workflows it affects.
           </p>

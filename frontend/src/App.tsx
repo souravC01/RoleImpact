@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { fetchDashboard } from './api/dashboard'
@@ -13,7 +13,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<WorkspaceWelcome />} />
-      <Route path="/example" element={<HarborlineDashboard />} />
+      <Route path="/example" element={<NorthstarDemo />} />
       <Route path="/organizations/:publicCode" element={<OrganizationIndexRedirect />} />
       <Route path="/organizations/:publicCode/:view" element={<OrganizationRoute />} />
       <Route path="*" element={<Navigate replace to="/" />} />
@@ -26,14 +26,19 @@ function OrganizationIndexRedirect() {
   return <Navigate replace to={`/organizations/${publicCode}/map`} />
 }
 
-function HarborlineDashboard() {
+function NorthstarDemo() {
   const navigate = useNavigate()
+  const [showResults, setShowResults] = useState(false)
   const dashboardQuery = useQuery({
-    queryKey: ['dashboard', 'harborline-commerce'],
+    queryKey: ['dashboard', 'northstar-public-demo'],
     queryFn: ({ signal }) => fetchDashboard(signal),
     retry: 1,
   })
-  const simulationMutation = useMutation({ mutationFn: runPrimarySimulation })
+  const simulationQuery = useQuery({
+    queryKey: ['simulation', 'northstar-live-demo'],
+    queryFn: runPrimarySimulation,
+    retry: 1,
+  })
   const mitigationMutation = useMutation({
     mutationFn: ({ simulationId, recommendationId }: { simulationId: string; recommendationId: string }) =>
       runMitigationBranch(simulationId, recommendationId),
@@ -43,7 +48,7 @@ function HarborlineDashboard() {
     return (
       <main className="centered-state" aria-live="polite">
         <span className="loader" aria-hidden="true" />
-        <p>Loading the Harborline baseline…</p>
+        <p>Loading the Northstar demo…</p>
       </main>
     )
   }
@@ -92,71 +97,73 @@ function HarborlineDashboard() {
             <p className="eyebrow">Access change impact simulator</p>
             <h1 id="page-title">See the blast radius before access changes go live.</h1>
             <p className="lede">
-              Test a proposed access change against Harborline’s people, permissions,
-              and business workflows before anyone is affected.
+              Follow one real business process from people and roles to the critical
+              workflow they keep running.
             </p>
           </div>
           <div className="scenario-card">
             <span>Primary scenario</span>
-            <strong>Remove Finance Approver from Priya Sharma</strong>
-            <p>Check which permissions disappear and whether Harborline can still complete critical work.</p>
+            <strong>Remove Bank Payment Releaser from Daniel Brooks</strong>
+            <p>See whether Northstar can still release its vendor payments—and who can safely take over.</p>
             <button
               type="button"
-              disabled={simulationMutation.isPending}
+              disabled={simulationQuery.isPending || simulationQuery.isError}
               onClick={() => {
                 mitigationMutation.reset()
-                simulationMutation.mutate()
+                setShowResults(true)
               }}
             >
-              {simulationMutation.isPending
-                ? 'Analyzing impact…'
-                : simulationMutation.data
-                  ? 'Run analysis again'
-                  : 'Run impact analysis'}
+              {simulationQuery.isPending ? 'Preparing the scenario…' : "Test removing Daniel's access"}
             </button>
-            {simulationMutation.isError && (
+            {simulationQuery.isError && (
               <p className="inline-error" role="alert">
-                The analysis could not run. Check that the local API is available and try again.
+                The analysis could not run: {simulationQuery.error.message}
               </p>
             )}
           </div>
         </section>
 
-        {simulationMutation.data && (
+        {!showResults && simulationQuery.data && (
+          <Suspense fallback={<div className="graph-loading-state">Preparing the dependency graph…</div>}>
+            <ImpactGraph original={simulationQuery.data} title="Northstar dependency graph" />
+          </Suspense>
+        )}
+
+        {showResults && simulationQuery.data && (
           <section className="results-section" aria-labelledby="results-title" aria-live="polite">
             <div className="verdict-card">
               <div>
                 <p className="section-kicker">Simulation complete</p>
                 <h2 id="results-title">
-                  {sentenceCase(simulationMutation.data.result.overallSeverity)} business impact
+                  {sentenceCase(simulationQuery.data.result.overallSeverity)} business impact
                 </h2>
                 <p>
-                  Removing <strong>{simulationMutation.data.result.changeSet.role.name}</strong> from{' '}
-                  <strong>{simulationMutation.data.result.changeSet.employee.name}</strong> blocks a critical
+                  Removing <strong>{simulationQuery.data.result.changeSet.role.name}</strong> from{' '}
+                  <strong>{simulationQuery.data.result.changeSet.employee.name}</strong> blocks a critical
                   payment path and reduces month-end resilience.
                 </p>
               </div>
-              <span className={`severity-badge ${simulationMutation.data.result.overallSeverity.toLowerCase()}`}>
-                {simulationMutation.data.result.overallSeverity}
+              <span className={`severity-badge ${simulationQuery.data.result.overallSeverity.toLowerCase()}`}>
+                {simulationQuery.data.result.overallSeverity}
               </span>
             </div>
 
             <div className="impact-metrics" aria-label="Impact summary">
               <article>
                 <span>Role removed</span>
-                <strong>{simulationMutation.data.result.executiveSummary.rolesRemoved}</strong>
+                <strong>{simulationQuery.data.result.executiveSummary.rolesRemoved}</strong>
               </article>
               <article>
                 <span>Permissions lost</span>
-                <strong>{simulationMutation.data.result.executiveSummary.permissionsLost}</strong>
+                <strong>{simulationQuery.data.result.executiveSummary.permissionsLost}</strong>
               </article>
               <article className="blocked-metric">
                 <span>Workflows blocked</span>
-                <strong>{simulationMutation.data.result.executiveSummary.workflowsBlocked}</strong>
+                <strong>{simulationQuery.data.result.executiveSummary.workflowsBlocked}</strong>
               </article>
               <article className="degraded-metric">
                 <span>Workflows degraded</span>
-                <strong>{simulationMutation.data.result.executiveSummary.workflowsDegraded}</strong>
+                <strong>{simulationQuery.data.result.executiveSummary.workflowsDegraded}</strong>
               </article>
             </div>
 
@@ -170,7 +177,7 @@ function HarborlineDashboard() {
                   <span>Before → after</span>
                 </div>
                 <div className="impact-list">
-                  {simulationMutation.data.result.workflowImpacts
+                  {simulationQuery.data.result.workflowImpacts
                     .filter((workflow) => workflow.baselineStatus !== workflow.scenarioStatus)
                     .map((workflow) => (
                       <article className="impact-row" key={workflow.workflowId}>
@@ -198,7 +205,7 @@ function HarborlineDashboard() {
                   </div>
                 </div>
                 <div className="permission-list">
-                  {simulationMutation.data.result.technicalImpact.lostPermissions.map((permission) => (
+                  {simulationQuery.data.result.technicalImpact.lostPermissions.map((permission) => (
                     <div className="permission-chip" key={permission.id}>
                       <code>{permission.action}</code>
                       <span>{permission.application.name} · {permission.resource.name}</span>
@@ -214,10 +221,10 @@ function HarborlineDashboard() {
                   <p className="section-kicker">Why this happens</p>
                   <h3>Traceable explanation paths</h3>
                 </div>
-                <code>{simulationMutation.data.result.diagnostics.resultHash.slice(0, 12)}</code>
+                <code>{simulationQuery.data.result.diagnostics.resultHash.slice(0, 12)}</code>
               </div>
               <div className="path-list">
-                {simulationMutation.data.result.explanationPaths.map((path) => (
+                {simulationQuery.data.result.explanationPaths.map((path) => (
                   <article className="explanation-path" key={`${path.workflowId}-${path.stepId}`}>
                     <span className={`status-pill ${path.outcome.toLowerCase()}`}>{path.outcome}</span>
                     <div className="path-nodes">
@@ -235,23 +242,23 @@ function HarborlineDashboard() {
 
             <Suspense fallback={<div className="graph-loading-state">Preparing the impact graph…</div>}>
               <ImpactGraph
-                original={simulationMutation.data}
+                original={simulationQuery.data}
                 mitigation={mitigationMutation.data}
               />
             </Suspense>
 
-            {simulationMutation.data.result.recommendations.length > 0 && (
+            {simulationQuery.data.result.recommendations.length > 0 && (
               <div className="mitigation-panel">
                 <div className="panel-heading">
                   <div>
                     <p className="section-kicker">Recommended mitigation</p>
-                    <h3>Restore the workflow without reversing Priya’s change</h3>
+                    <h3>Restore the workflow without reversing Daniel’s change</h3>
                   </div>
                   <span>Ranked by least additional access</span>
                 </div>
 
                 <div className="recommendation-list">
-                  {simulationMutation.data.result.recommendations.map((recommendation) => (
+                  {simulationQuery.data.result.recommendations.map((recommendation) => (
                     <article className="recommendation-card" key={recommendation.id}>
                       <div className="recommendation-rank" aria-label={`Recommendation rank ${recommendation.rank}`}>
                         {String(recommendation.rank).padStart(2, '0')}
@@ -279,7 +286,7 @@ function HarborlineDashboard() {
                         type="button"
                         disabled={mitigationMutation.isPending}
                         onClick={() => mitigationMutation.mutate({
-                          simulationId: simulationMutation.data.id,
+                          simulationId: simulationQuery.data.id,
                           recommendationId: recommendation.id,
                         })}
                       >
@@ -299,11 +306,11 @@ function HarborlineDashboard() {
                   </p>
                 )}
 
-                {simulationMutation.data.result.excludedCandidateReasons.length > 0 && (
+                {simulationQuery.data.result.excludedCandidateReasons.length > 0 && (
                   <details className="candidate-exclusions">
                     <summary>Why other employees were not recommended</summary>
                     <div>
-                      {simulationMutation.data.result.excludedCandidateReasons.map((exclusion) => (
+                      {simulationQuery.data.result.excludedCandidateReasons.map((exclusion) => (
                         <p key={exclusion.candidate.id}>
                           <strong>{exclusion.candidate.name}:</strong>{' '}
                           {exclusion.reasons.map((reason) => reason.detail).join(' ')}
@@ -339,7 +346,7 @@ function HarborlineDashboard() {
                     <span role="columnheader">Original scenario</span>
                     <span role="columnheader">With mitigation</span>
                   </div>
-                  {simulationMutation.data.result.workflowImpacts
+                  {simulationQuery.data.result.workflowImpacts
                     .filter((workflow) => workflow.baselineStatus !== workflow.scenarioStatus)
                     .map((workflow) => {
                       const mitigated = mitigationMutation.data.result.workflowImpacts

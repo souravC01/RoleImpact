@@ -36,7 +36,7 @@ const editableInventoryRoute = `/organizations/${editableCode}/inventory`
 const editableImpactRoute = `/organizations/${editableCode}/impact`
 
 describe('App', () => {
-  it('renders the seeded organization dashboard', async () => {
+  it('introduces the Northstar continuity demo without Harborline branding', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = input.toString()
@@ -44,9 +44,9 @@ describe('App', () => {
       if (url.endsWith('/api/v1/dashboard')) {
         return jsonResponse({
           organization: {
-            id: '00000000-0000-0000-0000-000000000001',
-            slug: 'harborline-commerce',
-            name: 'Harborline Commerce',
+            id: '00000000-0000-0000-0000-000000000002',
+            slug: 'northstar-medical-supplies',
+            name: 'Northstar Medical Supplies',
             baselineVersion: 1,
             contentHash: 'dbafb569ae3beaa13277897a7700ab32867675e31ee90cad74a9dc544d5c1fb4',
           },
@@ -76,15 +76,17 @@ describe('App', () => {
 
     renderApp()
 
-    expect(await screen.findByRole('heading', { name: 'Explore Harborline' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Explore the example' }))
-    expect(await screen.findByText(/Harborline Commerce/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Explore a live continuity risk' })).toBeInTheDocument()
+    expect(screen.queryByText('Local workspace')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Harborline/i)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Explore the live demo' }))
+    expect(await screen.findByText(/Northstar Medical Supplies/)).toBeInTheDocument()
     expect(screen.getByText('24')).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Month-End Close' })).not.toHaveLength(0)
     expect(screen.getByText('Immutable snapshot')).toBeInTheDocument()
   })
 
-  it('runs the Priya scenario and verifies the recommended mitigation branch', async () => {
+  it('shows the Northstar dependency graph before running the Daniel access test', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = input.toString()
@@ -95,7 +97,7 @@ describe('App', () => {
         return jsonResponse(dashboardFixture)
       }
       if (url.endsWith('/api/v1/simulations')) {
-        return jsonResponse(simulationFixture, 201)
+        return jsonResponse(northstarSimulationFixture, 201)
       }
       if (url.endsWith('/branches')) {
         return jsonResponse(mitigationFixture, 201)
@@ -103,36 +105,38 @@ describe('App', () => {
       return new Response(null, { status: 404 })
     })
 
-    renderApp()
+    renderApp(['/example'])
 
-    await user.click(await screen.findByRole('button', { name: 'Explore the example' }))
-    await user.click(await screen.findByRole('button', { name: 'Run impact analysis' }))
+    expect(await screen.findByRole(
+      'heading',
+      { name: 'Northstar dependency graph' },
+      { timeout: 3_000 },
+    )).toBeInTheDocument()
+    expect(screen.getAllByText('Daniel Brooks')).not.toHaveLength(0)
+    expect(screen.getAllByText('Vendor Payment Run')).not.toHaveLength(0)
+    expect(screen.queryByRole('heading', { name: 'Critical business impact' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: "Test removing Daniel's access" }))
 
     expect(await screen.findByRole('heading', { name: 'Critical business impact' })).toBeInTheDocument()
-    expect(screen.getAllByRole('heading', { name: 'Vendor Payment' })).not.toHaveLength(0)
-    expect(screen.getAllByRole('heading', { name: 'Month-End Close' })).not.toHaveLength(0)
+    expect(screen.getAllByRole('heading', { name: 'Vendor Payment Run' })).not.toHaveLength(0)
     expect(screen.getAllByText('BLOCKED')).not.toHaveLength(0)
-    expect(screen.getAllByText('DEGRADED')).not.toHaveLength(0)
-    expect(screen.getAllByText('payment.approve', { selector: 'code' })).not.toHaveLength(0)
-    expect(screen.getAllByText('ledger.close', { selector: 'code' })).not.toHaveLength(0)
-    expect(screen.getAllByText('Priya Sharma')).not.toHaveLength(0)
+    expect(screen.getAllByText('payment.release', { selector: 'code' })).not.toHaveLength(0)
+    expect(screen.getAllByText('Daniel Brooks')).not.toHaveLength(0)
     expect(await screen.findByRole('heading', { name: 'Focused impact graph' })).toBeInTheDocument()
     expect(screen.getByLabelText('Graph state legend')).toHaveTextContent('Blocked')
     expect(screen.getByText('Read the relationship path as text')).toBeInTheDocument()
     expect(screen.getByRole('heading', {
-      name: 'Restore the workflow without reversing Priya’s change',
+      name: 'Restore the workflow without reversing Daniel’s change',
     })).toBeInTheDocument()
-    expect(screen.getByText('Assign Finance Approver to Bob Chen')).toBeInTheDocument()
+    expect(screen.getByText('Assign Bank Payment Releaser to Nia Kapoor')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: "Test Bob's mitigation" }))
+    await user.click(screen.getByRole('button', { name: "Test Nia's mitigation" }))
 
     expect(await screen.findByRole('heading', { name: 'Workflow disruption resolved' })).toBeInTheDocument()
     expect(screen.getByRole('table', {
       name: 'Original and mitigated workflow comparison',
-    })).toHaveTextContent('Vendor Payment')
-    expect(screen.getByRole('table', {
-      name: 'Original and mitigated workflow comparison',
-    })).toHaveTextContent('Month-End Close')
+    })).toHaveTextContent('Vendor Payment Run')
     expect(screen.getAllByText('OPERATIONAL')).not.toHaveLength(0)
     expect(screen.getByText('Saved as a child simulation')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'With mitigation' })).toHaveAttribute('aria-pressed', 'true')
@@ -1111,30 +1115,102 @@ const customDraftMitigationPreviewFixture: DraftMitigationPreview = {
   },
 }
 
-const mitigationFixture = {
+const northstarSimulationFixture = {
   ...simulationFixture,
-  id: 'b0000000-0000-0000-0000-000000000003',
-  parentSimulationId: simulationFixture.id,
+  organizationId: '00000000-0000-0000-0000-000000000002',
   result: {
     ...simulationFixture.result,
-    overallSeverity: 'LOW',
     executiveSummary: {
       ...simulationFixture.result.executiveSummary,
+      permissionsLost: 1,
+      workflowsDegraded: 0,
+    },
+    changeSet: {
+      ...simulationFixture.result.changeSet,
+      employee: { id: '22000000-0000-0000-0000-000000000005', name: 'Daniel Brooks' },
+      role: { id: '33000000-0000-0000-0000-000000000003', name: 'Bank Payment Releaser' },
+    },
+    technicalImpact: {
+      ...simulationFixture.result.technicalImpact,
+      lostPermissions: [{
+        id: '44000000-0000-0000-0000-000000000003',
+        action: 'payment.release',
+        sensitivity: 'CRITICAL',
+        application: { id: 'bank-portal', name: 'Bank Portal' },
+        resource: { id: 'release-queue', name: 'Bank Release Queue' },
+      }],
+    },
+    workflowImpacts: [{
+      ...simulationFixture.result.workflowImpacts[0],
+      workflowId: '66000000-0000-0000-0000-000000000001',
+      workflowName: 'Vendor Payment Run',
+      failures: ['Release bank payment has no eligible actor.'],
+    }],
+    explanationPaths: [{
+      ...simulationFixture.result.explanationPaths[0],
+      workflowId: '66000000-0000-0000-0000-000000000001',
+      reason: 'No eligible bank payment releaser remains.',
+      nodes: [
+        { type: 'EMPLOYEE', id: 'daniel', label: 'Daniel Brooks' },
+        { type: 'ROLE', id: 'releaser', label: 'Bank Payment Releaser' },
+        { type: 'PERMISSION', id: 'release', label: 'payment.release' },
+        { type: 'CAPABILITY', id: 'release-capability', label: 'Release bank payment' },
+        { type: 'WORKFLOW_STEP', id: 'release-step', label: 'Release bank payment' },
+        { type: 'WORKFLOW', id: 'vendor-payment-run', label: 'Vendor Payment Run' },
+      ],
+    }],
+    graphDiff: {
+      nodes: simulationFixture.result.graphDiff.nodes.map((node) => ({
+        ...node,
+        label: node.type === 'EMPLOYEE' ? 'Daniel Brooks'
+          : node.type === 'ROLE' ? 'Bank Payment Releaser'
+            : node.type === 'PERMISSION' ? 'payment.release'
+              : node.type === 'CAPABILITY' || node.type === 'WORKFLOW_STEP' ? 'Release bank payment'
+                : 'Vendor Payment Run',
+      })),
+      edges: simulationFixture.result.graphDiff.edges,
+    },
+    recommendations: [{
+      ...simulationFixture.result.recommendations[0],
+      candidate: { id: '22000000-0000-0000-0000-000000000006', name: 'Nia Kapoor' },
+      role: { id: '33000000-0000-0000-0000-000000000003', name: 'Bank Payment Releaser' },
+      gainedPermissions: [{
+        id: '44000000-0000-0000-0000-000000000003',
+        action: 'payment.release',
+        sensitivity: 'CRITICAL',
+        application: { id: 'bank-portal', name: 'Bank Portal' },
+        resource: { id: 'release-queue', name: 'Bank Release Queue' },
+      }],
+      existingApplicationAccess: [{ id: 'bank-portal', name: 'Bank Portal' }],
+      restoredWorkflows: [{ id: '66000000-0000-0000-0000-000000000001', name: 'Vendor Payment Run' }],
+    }],
+  },
+}
+
+const mitigationFixture = {
+  ...northstarSimulationFixture,
+  id: 'b0000000-0000-0000-0000-000000000003',
+  parentSimulationId: northstarSimulationFixture.id,
+  result: {
+    ...northstarSimulationFixture.result,
+    overallSeverity: 'LOW',
+    executiveSummary: {
+      ...northstarSimulationFixture.result.executiveSummary,
       workflowsBlocked: 0,
       workflowsDegraded: 0,
       messageKey: 'simulation.revoke-role.low',
     },
     changeSet: {
-      ...simulationFixture.result.changeSet,
+      ...northstarSimulationFixture.result.changeSet,
       type: 'REVOKE_EMPLOYEE_ROLE_AND_ASSIGN_REPLACEMENT',
-      replacementEmployee: { id: '20000000-0000-0000-0000-000000000002', name: 'Bob Chen' },
+      replacementEmployee: { id: '22000000-0000-0000-0000-000000000006', name: 'Nia Kapoor' },
     },
     technicalImpact: {
-      ...simulationFixture.result.technicalImpact,
-      assignedRoles: [simulationFixture.result.changeSet.role],
-      gainedPermissions: simulationFixture.result.recommendations[0].gainedPermissions,
+      ...northstarSimulationFixture.result.technicalImpact,
+      assignedRoles: [northstarSimulationFixture.result.changeSet.role],
+      gainedPermissions: northstarSimulationFixture.result.recommendations[0].gainedPermissions,
     },
-    workflowImpacts: simulationFixture.result.workflowImpacts.map((workflow) => ({
+    workflowImpacts: northstarSimulationFixture.result.workflowImpacts.map((workflow) => ({
       ...workflow,
       scenarioStatus: 'OPERATIONAL',
       failures: [],
@@ -1142,30 +1218,30 @@ const mitigationFixture = {
     explanationPaths: [],
     graphDiff: {
       nodes: [
-        ...simulationFixture.result.graphDiff.nodes.map((node) => (
+        ...northstarSimulationFixture.result.graphDiff.nodes.map((node) => (
           node.type === 'EMPLOYEE'
             ? node
             : { ...node, state: 'RESTORED', detail: `${node.label} is restored by the replacement assignment.` }
         )),
         {
-          id: 'employee:bob',
+          id: 'employee:nia',
           type: 'EMPLOYEE',
-          entityId: 'bob',
-          label: 'Bob Chen',
+          entityId: 'nia',
+          label: 'Nia Kapoor',
           state: 'ADDED',
           detail: 'Replacement employee selected by the tested mitigation.',
         },
       ],
       edges: [
-        simulationFixture.result.graphDiff.edges[0],
+        northstarSimulationFixture.result.graphDiff.edges[0],
         {
-          id: 'bob-role',
-          sourceNodeId: 'employee:bob',
+          id: 'nia-role',
+          sourceNodeId: 'employee:nia',
           targetNodeId: 'role:finance-approver',
           relationship: 'ASSIGNED_ROLE',
           state: 'ADDED',
         },
-        ...simulationFixture.result.graphDiff.edges.slice(1).map((edge) => ({
+        ...northstarSimulationFixture.result.graphDiff.edges.slice(1).map((edge) => ({
           ...edge,
           state: 'RESTORED',
         })),
