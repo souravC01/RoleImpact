@@ -1,13 +1,58 @@
 # RoleImpact
 
-RoleImpact is a deterministic access-change impact simulator. It helps teams
-understand which technical permissions and business workflows would be affected
-before they offboard an employee, revoke a role, or remove a permission.
+[![Live Demo](https://img.shields.io/badge/Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://roleimpact.vercel.app/) [![Case Study](https://img.shields.io/badge/Portfolio_Case_Study-2563EB?style=for-the-badge&logo=readme&logoColor=white)](https://souravchandhok.dev/projects/roleimpact/)
 
-## Current milestone
+[Explore the live demo](https://roleimpact.vercel.app/) · [Read the portfolio case study](https://souravchandhok.dev/projects/roleimpact/) · [Run locally](#run-locally) · [Tests](#tests)
 
-The repository contains the local foundation and its first complete simulation
-and mitigation vertical slice:
+RoleImpact is a deterministic access-change impact simulator that shows which
+business workflows would break before an employee is offboarded, a role is
+revoked, or access is reassigned.
+
+## Why RoleImpact exists
+
+Access reviews usually stop at the technical layer: which user has which role
+and which permissions that role grants. The business consequence is harder to
+see. Removing one apparently narrow permission can leave nobody able to approve
+a payment, release a deployment, or complete another critical process.
+
+RoleImpact connects the full evidence path:
+
+```text
+Employee → Role → Permission → Capability → Workflow step → Business workflow
+```
+
+Before a change is made, the impact engine evaluates that graph, identifies
+blocked or degraded workflows, explains exactly why they are affected, and
+tests whether a proposed replacement restores continuity without damaging the
+replacement's existing responsibilities.
+
+## The demo story
+
+Northstar Medical Supplies depends on a three-step **Vendor Payment Run**:
+validate the supplier invoice, approve the payment, and release the payment to
+the bank. Daniel Brooks is the only employee holding the critical **Bank Payment
+Releaser** role.
+
+The demo asks a practical question: **what happens if Daniel loses that role?**
+
+1. RoleImpact removes the assignment in a simulation, without changing the
+   organization baseline.
+2. The graph traces the lost `payment.release` permission to the **Release bank
+   payment** capability and workflow step.
+3. The Vendor Payment Run becomes blocked because no eligible actor remains.
+4. RoleImpact recommends Nia Kapoor as the safest replacement because she is
+   active, works in Treasury Operations, already has Bank Portal access, and
+   does not create a new continuity gap elsewhere.
+5. A mitigation preview assigns the role to Nia and shows the workflow restored
+   before the real access change is made.
+
+This scenario demonstrates the product's core promise: move from “who has
+access?” to **“what breaks if that access changes, and how do we fix it safely?”**
+
+## What the MVP demonstrates
+
+The repository contains a deployed portfolio MVP with a complete simulation and
+mitigation vertical slice:
 
 - React and TypeScript frontend
 - Spring Boot and Java 21 API
@@ -36,16 +81,13 @@ and mitigation vertical slice:
 - Backend unit and real-PostgreSQL integration tests
 - Frontend unit tests
 
-## Published Northstar demo
+## Published demo dataset
 
-The public version 1 demo models Northstar Medical Supplies with six employees,
-two teams, four roles, and the critical Vendor Payment Run. Daniel Brooks is the
-only Bank Payment Releaser, so removing that assignment blocks the bank-release
-step. Nia Kapoor is ranked first as a safe replacement because she is active,
-works in the same Treasury Operations team, already has Bank Portal access, and
-restores the workflow without worsening another process. The published snapshot
-is read-only. The older Harborline seed remains available for regression coverage
-but is no longer presented as the product demo.
+The public version 1 snapshot contains six employees, two teams, four roles,
+two applications, four permissions, three capabilities, and the critical Vendor
+Payment Run. It is intentionally read-only so every visitor receives the same
+reproducible simulation. The older Harborline seed remains available for
+regression coverage but is no longer presented as the product demo.
 
 ## Prerequisites
 
